@@ -1,3 +1,5 @@
+#git reset --soft HEAD~1
+
 library(tidyverse)
 
 # Folder containing the raw CSV files
