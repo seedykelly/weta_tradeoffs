@@ -1,0 +1,150 @@
+
+R version 2.12.1 (2010-12-16)
+Copyright (C) 2010 The R Foundation for Statistical Computing
+ISBN 3-900051-07-0
+Platform: i386-apple-darwin9.8.0/i386 (32-bit)
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+  Natural language support but running in an English locale
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+[R.app GUI 1.35 (5665) i386-apple-darwin9.8.0]
+
+[Workspace restored from /Users/clintkelly1/.RData]
+[History restored from /Users/clintkelly1/.Rhistory]
+
+> setwd("/Users/clintkelly1/Documents/Projects/Trait compensation")
+> 
+> ##### READ DATA
+> rm(list=ls())
+> mydata<-read.csv("three morph traits.csv",header=T)  
+> attach(mydata)
+> str(mydata)
+'data.frame':	71 obs. of  18 variables:
+ $ X1       : Factor w/ 71 levels "2","3","34","35",..: 1 2 3 4 5 6 7 8 9 10 ...
+ $ cat      : Factor w/ 3 levels "eight","nine",..: 1 1 1 1 1 1 1 1 1 1 ...
+ $ head_l   : num  18.5 18 17.5 17.1 14.3 ...
+ $ head_w   : num  9.28 9.44 9.27 8.68 7.57 9.14 9.49 9.7 7.52 8.18 ...
+ $ testes   : num  0.00753 0.01516 0.01719 0.01105 0.035 ...
+ $ pronotum : num  6.35 6.55 5.9 6.26 5.74 6.33 6.34 6.71 5.85 5.6 ...
+ $ femur.1  : num  11.2 10.8 10.6 10.3 9.1 ...
+ $ tibia.1  : num  12 12.4 12 11.9 11.5 ...
+ $ tarsus.1 : num  3.26 3.33 3.46 3.01 3.27 ...
+ $ ear      : num  2.74 2.82 2.78 2.75 2.81 ...
+ $ femur.2  : num  10.9 10.04 10.14 10.22 8.16 ...
+ $ tibia.2  : num  12.04 11.57 11.16 11.62 9.42 ...
+ $ tarsus.2 : num  3.56 3.45 3.44 3.31 3.08 ...
+ $ femur.2.1: num  17.9 17.6 17.2 17.4 15.2 ...
+ $ tibia.3  : num  19 18.3 18.2 17.1 16.5 ...
+ $ tarsus.3 : num  3.59 3.84 3.33 3.66 3.21 ...
+ $ femur.3  : num  17.9 17.6 17.2 17.4 15.2 ...
+ $ eye      : num  3.66 4.71 3.04 3.44 4.72 ...
+> 
+> 
+> library(lattice)
+> library(car)
+Loading required package: MASS
+Loading required package: nnet
+Loading required package: survival
+Loading required package: splines
+> #########
+> head.l<-log(head_l)
+> head.w<-log(head_w)
+> ear.x<-log(sqrt(ear))
+> gonad<-log(testes^(1/3))
+> pro<-log(pronotum)
+> fem.1<-log(femur.1)
+> tib.1<-log(tibia.1)
+> tar.1<-log(tarsus.1)
+> fem.2<-log(femur.2)
+> tib.2<-log(tibia.2)
+> tar.2<-log(tarsus.2)
+> fem.3<-log(femur.3)
+> tib.3<-log(tibia.3)
+> tar.3<-log(tarsus.3)
+> #eye.x<-sqrt(eye)
+> 
+> weta<-cbind(cat,head.l,pro,head.w,tib.1,fem.1,tib.2,fem.2,tib.3,fem.3,ear.x,gonad,tar.1, tar.2,tar.3)
+> 
+> ############
+> weta.data<-weta[,3:12]
+> model<-prcomp(weta.data,scale=TRUE,cor=TRUE)
+> model
+Standard deviations:
+ [1] 2.8696176 1.0013000 0.4950303 0.4038122 0.3347884 0.2840537 0.2545329 0.2107587 0.1723451 0.1513106
+
+Rotation:
+              PC1          PC2         PC3         PC4         PC5          PC6          PC7         PC8         PC9
+pro    0.31884035  0.063757047 -0.51208959  0.73313243 -0.10965069  0.183866016 -0.193285172  0.07482601 -0.03467560
+head.w 0.33765731  0.029011926 -0.12858274 -0.02129146 -0.32382665 -0.422690916  0.534931494 -0.42464997 -0.33150078
+tib.1  0.33721210  0.023471516  0.18239566 -0.02560318  0.31130190 -0.386941232 -0.599762309 -0.36785960  0.05865461
+fem.1  0.33825239  0.052347068 -0.13223154 -0.09863391  0.34257355 -0.452929923  0.028800630  0.57429782 -0.15532897
+tib.2  0.33934245  0.043664291 -0.02619039 -0.20064443  0.21977821  0.509301280 -0.076357748 -0.42942791 -0.21435502
+fem.2  0.33647985  0.074889065 -0.15252057 -0.28117072  0.37848563  0.360220451  0.326845113  0.20148448  0.03066186
+tib.3  0.33273137 -0.042139755  0.15666302 -0.32104335 -0.63897884  0.167971322 -0.361177445  0.32913336 -0.26902926
+fem.3  0.34188529 -0.009665758 -0.10630712 -0.16115248 -0.24773591 -0.050713421  0.086533463 -0.04998952  0.85962909
+ear.x  0.31284231 -0.097431927  0.76988879  0.45053551  0.04893334  0.112787021  0.255632195  0.11355422  0.04839770
+gonad  0.04861766 -0.986369662 -0.13399869 -0.01851972  0.07233374 -0.001717678  0.001263418 -0.01442922 -0.02771135
+              PC10
+pro     0.06757579
+head.w  0.09086048
+tib.1   0.32665751
+fem.1  -0.42232047
+tib.2  -0.54600260
+fem.2   0.59789583
+tib.3   0.11062982
+fem.3  -0.18126116
+ear.x  -0.03500867
+gonad   0.01413314
+> summary(model)
+Importance of components:
+                          PC1    PC2     PC3     PC4     PC5     PC6     PC7     PC8     PC9    PC10
+Standard deviation     2.8696 1.0013 0.49503 0.40381 0.33479 0.28405 0.25453 0.21076 0.17235 0.15131
+Proportion of Variance 0.8235 0.1003 0.02451 0.01631 0.01121 0.00807 0.00648 0.00444 0.00297 0.00229
+Cumulative Proportion  0.8235 0.9237 0.94824 0.96454 0.97575 0.98382 0.99030 0.99474 0.99771 1.00000
+> 
+> yv<-predict(model)[,1]#all but testes (pos)
+> yv2<-predict(model)[,2]#(-)testes
+> yv3<-predict(model)[,3]#(+)ear
+> yv4<-predict(model)[,4]#(+)pronotum
+> yv5<-predict(model)[,5]#(-)tibia.3
+> #yv6<-predict(model)[,6]#(+)tibia.2 and (-)femur.1
+> 
+> model.2<-lm(head.l~cat+yv+yv2+yv3+yv4+yv5)
+> summary(model.2)
+
+Call:
+lm(formula = head.l ~ cat + yv + yv2 + yv3 + yv4 + yv5)
+
+Residuals:
+      Min        1Q    Median        3Q       Max 
+-0.094359 -0.024911  0.004311  0.028698  0.097999 
+
+Coefficients:
+             Estimate Std. Error t value Pr(>|t|)    
+(Intercept)  2.975429   0.016146 184.281  < 2e-16 ***
+catnine      0.066213   0.018036   3.671 0.000499 ***
+catten       0.158342   0.029854   5.304 1.55e-06 ***
+yv           0.050369   0.004123  12.216  < 2e-16 ***
+yv2          0.008633   0.005712   1.511 0.135688    
+yv3         -0.027899   0.011458  -2.435 0.017734 *  
+yv4         -0.002888   0.014055  -0.205 0.837853    
+yv5         -0.053032   0.017047  -3.111 0.002801 ** 
+---
+Signif. codes:  0 Ô***Õ 0.001 Ô**Õ 0.01 Ô*Õ 0.05 Ô.Õ 0.1 Ô Õ 1 
+
+Residual standard error: 0.04742 on 63 degrees of freedom
+Multiple R-squared: 0.9536,	Adjusted R-squared: 0.9484 
+F-statistic: 184.8 on 7 and 63 DF,  p-value: < 2.2e-16 
+
+> 
