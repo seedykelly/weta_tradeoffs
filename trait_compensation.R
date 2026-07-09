@@ -3,7 +3,7 @@
 library(tidyverse)
 
 # Folder containing the raw CSV files
-raw_dir <- "/Users/uqam/Documents/Research_Admin/research projects/Trait compensation/data/raw"
+raw_dir <- "/Users/uqam/Documents/Research_Admin/research projects/Trait compensation/data/raw/measurements"
 
 # -------------------------------------------------------------------------
 # 1. Import all CSV files and clean IDs
