@@ -4,8 +4,5 @@
 .Ruserdata
 .DS_Store
 
-data/raw/pronotum/
-data/raw/hindleg/
-data/raw/head/
-data/raw/foreleg/
-data/raw/
+data/raw/*
+!data/raw/measurements/
