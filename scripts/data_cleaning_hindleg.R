@@ -1,6 +1,6 @@
 # ============================================================
-# Import and clean midleg measurements
-# Files: second_leg_1.csv, second_leg_2.csv, etc.
+# Import and clean hindleg measurements
+# Files: hindleg_1.csv, hindleg_2.csv, etc.
 # ============================================================
 
 library(tidyverse)
@@ -29,36 +29,36 @@ dir.create(
 
 
 # ------------------------------------------------------------
-# 2. Find all midleg files
+# 2. Find all hindleg files
 # ------------------------------------------------------------
 
-midleg_files <- list.files(
+hindleg_files <- list.files(
   path = raw_dir,
-  pattern = "^second_leg_[0-9]+\\.csv$",
+  pattern = "^hindleg_[0-9]+\\.csv$",
   full.names = TRUE
 ) |>
   str_sort(numeric = TRUE)
 
-if (length(midleg_files) == 0) {
+if (length(hindleg_files) == 0) {
   stop(
-    "No files matching 'second_leg_[number].csv' were found in:\n",
+    "No files matching 'hindleg_[number].csv' were found in:\n",
     raw_dir
   )
 }
 
 message(
   "Found ",
-  length(midleg_files),
-  " midleg files:\n",
-  paste(basename(midleg_files), collapse = "\n")
+  length(hindleg_files),
+  " hindleg files:\n",
+  paste(basename(hindleg_files), collapse = "\n")
 )
 
 
 # ------------------------------------------------------------
-# 3. Function for importing one midleg CSV
+# 3. Function to import one hindleg file
 # ------------------------------------------------------------
 
-read_midleg_file <- function(file) {
+read_hindleg_file <- function(file) {
   
   dat <- read_csv(
     file,
@@ -89,27 +89,19 @@ read_midleg_file <- function(file) {
       source_file = basename(file),
       source_row = row_number(),
       
-      # Extract the individual identifier from the beginning
-      # of the label.
+      # Extract the individual ID from the beginning of Label.
       #
-      # Example:
-      # ACIU-2nd leg-left.jpg:1454-2285
-      # becomes:
-      # ACIU
+      # ACGN-3rd leg-left.jpg:2531-2079
+      # becomes ACGN
       ID = str_extract(Label, "^[^-]+"),
       ID = str_to_upper(str_trim(ID)),
       
-      # Extract side from the label.
-      #
-      # This handles:
-      # "2nd leg-left"
-      # "2nd leg- left"
-      # "2nd legs-left"
+      # Extract side directly from Label
       side = case_when(
         str_detect(
           Label,
           regex(
-            "2nd\\s+legs?\\s*-\\s*left",
+            "3rd\\s+legs?\\s*-\\s*left",
             ignore_case = TRUE
           )
         ) ~ "left",
@@ -117,7 +109,7 @@ read_midleg_file <- function(file) {
         str_detect(
           Label,
           regex(
-            "2nd\\s+legs?\\s*-\\s*right",
+            "3rd\\s+legs?\\s*-\\s*right",
             ignore_case = TRUE
           )
         ) ~ "right",
@@ -125,7 +117,7 @@ read_midleg_file <- function(file) {
         TRUE ~ NA_character_
       ),
       
-      # Convert the measurement to numeric
+      # Convert the Fiji Length column to numeric
       Length = parse_double(
         Length,
         na = c("", "NA", "NaN", "-", "N/A")
@@ -142,49 +134,44 @@ read_midleg_file <- function(file) {
 
 
 # ------------------------------------------------------------
-# 4. Import and combine all midleg files
+# 4. Import and combine all hindleg files
 # ------------------------------------------------------------
 
-midleg_raw <- map_dfr(
-  midleg_files,
-  read_midleg_file
+hindleg_raw <- map_dfr(
+  hindleg_files,
+  read_hindleg_file
 )
 
-glimpse(midleg_raw)
+glimpse(hindleg_raw)
 
 
 # ------------------------------------------------------------
-# 5. Check that every label produced an ID and side
+# 5. Check ID and side extraction
 # ------------------------------------------------------------
 
-invalid_midleg_labels <- midleg_raw |>
+invalid_hindleg_labels <- hindleg_raw |>
   filter(
     is.na(ID) |
       ID == "" |
       is.na(side)
   )
 
-if (nrow(invalid_midleg_labels) > 0) {
+if (nrow(invalid_hindleg_labels) > 0) {
   
-  print(invalid_midleg_labels)
+  print(invalid_hindleg_labels)
   
   stop(
-    "Some labels could not be converted to an ID and leg side. ",
-    "Examine 'invalid_midleg_labels'."
+    "Some labels could not be converted to an ID and side. ",
+    "Examine 'invalid_hindleg_labels'."
   )
 }
 
 
 # ------------------------------------------------------------
-# 6. Check whether an ID-side combination occurs in
-#    more than one file
-# ------------------------------------------------------------
-#
-# An ID can have a left and right leg, but the same side should
-# not occur in multiple files.
+# 6. Check whether an ID-side occurs in multiple files
 # ------------------------------------------------------------
 
-duplicate_midleg_sides <- midleg_raw |>
+duplicate_hindleg_sides <- hindleg_raw |>
   distinct(
     source_file,
     ID,
@@ -197,33 +184,33 @@ duplicate_midleg_sides <- midleg_raw |>
   ) |>
   filter(n_files > 1)
 
-if (nrow(duplicate_midleg_sides) > 0) {
+if (nrow(duplicate_hindleg_sides) > 0) {
   
-  print(duplicate_midleg_sides)
+  print(duplicate_hindleg_sides)
   
   stop(
     "Some ID-side combinations occur in more than one file. ",
-    "Examine 'duplicate_midleg_sides'."
+    "Examine 'duplicate_hindleg_sides'."
   )
 }
 
 
 # ------------------------------------------------------------
-# 7. Check the number of rows per leg
+# 7. Count measurements for each available leg
 # ------------------------------------------------------------
 #
-# Each available leg should have two rows:
+# Normally:
 #
-# 1. Femur length
-# 2. Tibia length
+# Row 1 = femur length
+# Row 2 = tibia length
 #
-# An entire left or right leg may be absent. That is allowed.
+# An entire side can be absent.
 #
-# A measurement value may also be NA, but the row must still
-# be present.
+# A side with only one row is retained. Its first measurement
+# is interpreted as femur length and tibia is recorded as NA.
 # ------------------------------------------------------------
 
-midleg_counts <- midleg_raw |>
+hindleg_counts <- hindleg_raw |>
   count(
     source_file,
     ID,
@@ -231,31 +218,44 @@ midleg_counts <- midleg_raw |>
     name = "n_measurements"
   )
 
-incorrect_midleg_counts <- midleg_counts |>
-  filter(n_measurements != 2)
+# More than two rows cannot be interpreted safely
 
-if (nrow(incorrect_midleg_counts) > 0) {
+excess_hindleg_rows <- hindleg_counts |>
+  filter(n_measurements > 2)
+
+if (nrow(excess_hindleg_rows) > 0) {
   
-  print(incorrect_midleg_counts)
+  print(excess_hindleg_rows)
   
   stop(
-    "Some available legs do not have exactly two measurement rows. ",
-    "Examine 'incorrect_midleg_counts'."
+    "Some hindlegs have more than two measurement rows. ",
+    "Examine 'excess_hindleg_rows'."
   )
+}
+
+
+# Legs containing only one measurement
+
+incomplete_hindlegs <- hindleg_counts |>
+  filter(n_measurements == 1)
+
+if (nrow(incomplete_hindlegs) > 0) {
+  
+  message(
+    "\nThe following legs contain only one measurement.\n",
+    "The measurement will be treated as femur length, and ",
+    "tibia length will be set to NA."
+  )
+  
+  print(incomplete_hindlegs)
 }
 
 
 # ------------------------------------------------------------
 # 8. Assign femur and tibia measurements
 # ------------------------------------------------------------
-#
-# Within each ID and side:
-#
-# Row 1 = femur
-# Row 2 = tibia
-# ------------------------------------------------------------
 
-midleg_long <- midleg_raw |>
+hindleg_long <- hindleg_raw |>
   group_by(
     source_file,
     ID,
@@ -270,16 +270,16 @@ midleg_long <- midleg_raw |>
     
     trait = case_when(
       side == "left" &
-        measurement_number == 1 ~ "left_midfemur",
+        measurement_number == 1 ~ "left_hindfemur",
       
       side == "left" &
-        measurement_number == 2 ~ "left_midtibia",
+        measurement_number == 2 ~ "left_hindtibia",
       
       side == "right" &
-        measurement_number == 1 ~ "right_midfemur",
+        measurement_number == 1 ~ "right_hindfemur",
       
       side == "right" &
-        measurement_number == 2 ~ "right_midtibia"
+        measurement_number == 2 ~ "right_hindtibia"
     ),
     
     value = Length
@@ -291,14 +291,14 @@ midleg_long <- midleg_raw |>
 # 9. Convert to one row per individual
 # ------------------------------------------------------------
 
-midleg_traits <- c(
-  "left_midfemur",
-  "left_midtibia",
-  "right_midfemur",
-  "right_midtibia"
+hindleg_traits <- c(
+  "left_hindfemur",
+  "left_hindtibia",
+  "right_hindfemur",
+  "right_hindtibia"
 )
 
-midlegs <- midleg_long |>
+hindlegs <- hindleg_long |>
   select(
     ID,
     trait,
@@ -310,53 +310,46 @@ midlegs <- midleg_long |>
   )
 
 
-# Add any trait columns that might be completely absent
-# from the entire collection of files.
+# Add any trait column that is completely absent from all files
 
 missing_trait_columns <- setdiff(
-  midleg_traits,
-  names(midlegs)
+  hindleg_traits,
+  names(hindlegs)
 )
 
 if (length(missing_trait_columns) > 0) {
   
   for (column_name in missing_trait_columns) {
-    midlegs[[column_name]] <- NA_real_
+    hindlegs[[column_name]] <- NA_real_
   }
 }
 
 
-# Put columns in the requested order
+# Arrange columns in the requested order
 
-midlegs <- midlegs |>
+hindlegs <- hindlegs |>
   select(
     ID,
-    all_of(midleg_traits)
+    all_of(hindleg_traits)
   ) |>
   arrange(ID)
 
 
 # View the cleaned data
 
-glimpse(midlegs)
+glimpse(hindlegs)
 
 print(
-  midlegs,
+  hindlegs,
   n = 20
 )
 
 
 # ------------------------------------------------------------
-# 10. Identify individuals missing an entire leg
-# ------------------------------------------------------------
-#
-# This uses the presence of labels rather than the numerical
-# measurements. Therefore, a leg with two rows containing NA
-# is distinguished from a leg that was not photographed or
-# measured at all.
+# 10. Identify individuals missing an entire side
 # ------------------------------------------------------------
 
-midleg_side_presence <- midleg_raw |>
+hindleg_side_presence <- hindleg_raw |>
   distinct(
     ID,
     side
@@ -374,42 +367,44 @@ midleg_side_presence <- midleg_raw |>
   ) |>
   arrange(ID)
 
-midleg_missing_sides <- midleg_side_presence |>
+hindleg_missing_sides <- hindleg_side_presence |>
   filter(
     !has_left |
       !has_right
   )
 
-print(midleg_missing_sides)
+print(hindleg_missing_sides)
 
 
 # ------------------------------------------------------------
 # 11. Summarize missing measurements
 # ------------------------------------------------------------
 
-midleg_missing_summary <- midlegs |>
+hindleg_missing_summary <- hindlegs |>
   summarise(
     n_individuals = n(),
     
-    missing_left_midfemur  = sum(is.na(left_midfemur)),
-    missing_left_midtibia  = sum(is.na(left_midtibia)),
-    missing_right_midfemur = sum(is.na(right_midfemur)),
-    missing_right_midtibia = sum(is.na(right_midtibia)),
+    missing_left_hindfemur  = sum(is.na(left_hindfemur)),
+    missing_left_hindtibia  = sum(is.na(left_hindtibia)),
+    missing_right_hindfemur = sum(is.na(right_hindfemur)),
+    missing_right_hindtibia = sum(is.na(right_hindtibia)),
     
     complete_individuals = sum(
-      !is.na(left_midfemur) &
-        !is.na(left_midtibia) &
-        !is.na(right_midfemur) &
-        !is.na(right_midtibia)
+      complete.cases(
+        left_hindfemur,
+        left_hindtibia,
+        right_hindfemur,
+        right_hindtibia
+      )
     )
   )
 
-print(midleg_missing_summary)
+print(hindleg_missing_summary)
 
 
-# Individuals with at least one missing measurement
+# Individuals with at least one missing hindleg measurement
 
-midleg_missing_measurements <- midlegs |>
+hindleg_missing_measurements <- hindlegs |>
   filter(
     if_any(
       -ID,
@@ -417,44 +412,44 @@ midleg_missing_measurements <- midlegs |>
     )
   )
 
-print(midleg_missing_measurements)
+print(hindleg_missing_measurements)
 
 
 # ------------------------------------------------------------
 # 12. Optional range check
 # ------------------------------------------------------------
 #
-# Values are only flagged; they are not removed or changed.
-# Adjust the upper limit if necessary.
+# Values are flagged but are not removed or changed.
+# Adjust the maximum if necessary.
 # ------------------------------------------------------------
 
-midleg_suspect_values <- midlegs |>
+hindleg_suspect_values <- hindlegs |>
   filter(
     if_any(
       -ID,
-      ~ !is.na(.x) & (.x <= 0 | .x > 30)
+      ~ !is.na(.x) & (.x <= 0 | .x > 40)
     )
   )
 
-print(midleg_suspect_values)
+print(hindleg_suspect_values)
 
 
 # ------------------------------------------------------------
-# 13. Save the cleaned midleg data
+# 13. Save cleaned hindleg data
 # ------------------------------------------------------------
 
-midleg_output_file <- file.path(
+hindleg_output_file <- file.path(
   clean_dir,
-  "midlegs_clean.csv"
+  "hindlegs_clean.csv"
 )
 
 write_csv(
-  midlegs,
-  midleg_output_file,
+  hindlegs,
+  hindleg_output_file,
   na = ""
 )
 
 message(
-  "Cleaned midleg data saved to:\n",
-  midleg_output_file
+  "Cleaned hindleg data saved to:\n",
+  hindleg_output_file
 )
