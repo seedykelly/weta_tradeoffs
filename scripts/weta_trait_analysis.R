@@ -677,14 +677,14 @@ mod_leg_allocation <- lmerTest::lmer(
   na.action = na.omit
 )
 
-leg_allocation_anova <- lmerTest::anova(
+leg_allocation_anova <- anova(
   mod_leg_allocation,
   type = 3,
   ddf = "Satterthwaite"
 ) |>
   as.data.frame() |>
-  rownames_to_column("term") |>
-  as_tibble()
+  tibble::rownames_to_column("term") |>
+  tibble::as_tibble()
 
 cat("\nJOINT LEG-ALLOCATION MODEL\n")
 print(leg_allocation_anova)

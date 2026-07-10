@@ -1,0 +1,613 @@
+---
+title: "Wellington tree wētā morphological allocation"
+subtitle: "Draft Results section"
+author: ""
+format:
+  docx:
+    reference-doc: word-style-template.docx
+    toc: false
+    number-sections: true
+bibliography: Bibliography.bib
+execute:
+  echo: false
+  warning: false
+  message: false
+params:
+  project_dir: "/Users/uqam/Documents/Research_Admin/research projects/Trait compensation"
+---
+
+<!--
+Run weta_trait_analysis_revised.R before rendering this file.
+The only path that should normally need editing is params.project_dir above.
+Place Bibliography.bib and word-style-template.docx in the same directory as this QMD.
+Render with:
+  quarto render weta_results_word.qmd
+-->
+
+```{r}
+#| label: setup
+#| include: false
+
+library(tidyverse)
+library(emmeans)
+library(lmerTest)
+library(knitr)
+
+alpha <- 0.05
+project_dir <- params$project_dir
+output_dir  <- file.path(project_dir, "analysis_outputs", "weta_trait_analysis")
+tables_dir  <- file.path(output_dir, "tables")
+figures_dir <- file.path(output_dir, "figures")
+models_dir  <- file.path(output_dir, "models")
+
+required_files <- c(
+  file.path(tables_dir, "group_descriptive_statistics.csv"),
+  file.path(tables_dir, "common_body_size_range.csv"),
+  file.path(tables_dir, "joint_leg_model_type3_anova.csv"),
+  file.path(tables_dir, "joint_adjusted_leg_means.csv"),
+  file.path(tables_dir, "joint_leg_males_vs_female.csv"),
+  file.path(tables_dir, "joint_leg_slopes.csv"),
+  file.path(tables_dir, "joint_group_slopes_within_leg.csv"),
+  file.path(tables_dir, "joint_three_way_slope_contrasts.csv"),
+  file.path(tables_dir, "segment_slope_model_tests.csv"),
+  file.path(tables_dir, "ear_nested_model_tests.csv"),
+  file.path(tables_dir, "eye_nested_model_tests.csv"),
+  file.path(models_dir, "weta_trait_models.rds")
+)
+
+missing_files <- required_files[!file.exists(required_files)]
+if (length(missing_files) > 0) {
+  stop(
+    paste0(
+      "The following analysis outputs are missing:\n",
+      paste(missing_files, collapse = "\n"),
+      "\n\nRun weta_trait_analysis_revised.R before rendering this QMD."
+    ),
+    call. = FALSE
+  )
+}
+
+read_result <- function(filename) {
+  readr::read_csv(file.path(tables_dir, filename), show_col_types = FALSE)
+}
+
+fmt_num <- function(x, digits = 2) {
+  formatC(x, format = "f", digits = digits)
+}
+
+fmt_p <- function(p, digits = 3) {
+  if (is.na(p)) return("p = NA")
+  if (p < 0.001) return("p < 0.001")
+  paste0("p = ", formatC(p, format = "f", digits = digits))
+}
+
+fmt_f <- function(row, digits = 2) {
+  paste0(
+    "F(", fmt_num(row$num_df, 0), ", ", fmt_num(row$den_df, 2), ") = ",
+    fmt_num(row$f_value, digits), ", ", fmt_p(row$p_value)
+  )
+}
+
+get_term <- function(tab, term_name) {
+  out <- tab |> filter(.data$term == term_name)
+  if (nrow(out) != 1) {
+    stop("Could not uniquely locate model term: ", term_name, call. = FALSE)
+  }
+  out
+}
+
+get_test <- function(tab, analysis_name) {
+  out <- tab |> filter(.data$analysis == analysis_name)
+  if (nrow(out) != 1) {
+    stop("Could not uniquely locate nested-model test: ", analysis_name, call. = FALSE)
+  }
+  out
+}
+
+get_vs_female <- function(tab, group_name, leg_name = NULL) {
+  out <- tab |>
+    filter(
+      stringr::str_detect(
+        .data$contrast,
+        stringr::regex(
+          paste0("^", group_name, "\\s*-\\s*female$"),
+          ignore_case = TRUE
+        )
+      )
+    )
+
+  if (!is.null(leg_name)) {
+    out <- out |> filter(.data$leg == leg_name)
+  }
+
+  if (nrow(out) != 1) {
+    stop(
+      "Could not uniquely locate contrast for ", group_name,
+      if (!is.null(leg_name)) paste0(" within ", leg_name) else "",
+      call. = FALSE
+    )
+  }
+  out
+}
+
+effect_text <- function(row, positive = "longer", negative = "shorter") {
+  pct <- row$percent_difference
+  direction <- ifelse(pct >= 0, positive, negative)
+  paste0(
+    fmt_num(abs(pct), 1), "% ", direction,
+    " (Holm-adjusted ", fmt_p(row$p.value), ")"
+  )
+}
+
+group_labels <- c(
+  eighth = "Eighth-instar males",
+  ninth  = "Ninth-instar males",
+  tenth  = "Tenth-instar males"
+)
+
+describe_vs_female <- function(
+    tab,
+    percent_column = "percent_difference",
+    positive = "larger",
+    negative = "smaller"
+) {
+  tab <- tab |>
+    mutate(
+      group_key = str_trim(str_remove(.data$contrast, "\\s*-\\s*female$")),
+      group_label = unname(group_labels[.data$group_key]),
+      pct = .data[[percent_column]],
+      direction = if_else(.data$pct >= 0, positive, negative),
+      clause = paste0(
+        .data$group_label, " were ", fmt_num(abs(.data$pct), 1), "% ",
+        .data$direction, " than females (Holm-adjusted ",
+        map_chr(.data$p.value, fmt_p), ")"
+      )
+    )
+
+  paste(tab$clause, collapse = "; ")
+}
+
+# Core tables ------------------------------------------------
+group_summary <- read_result("group_descriptive_statistics.csv")
+common_body_size <- read_result("common_body_size_range.csv")
+
+leg_anova <- read_result("joint_leg_model_type3_anova.csv") |>
+  rename(
+    sum_sq = `Sum Sq`,
+    mean_sq = `Mean Sq`,
+    num_df = NumDF,
+    den_df = DenDF,
+    f_value = `F value`,
+    p_value = `Pr(>F)`
+  )
+
+adjusted_leg_means <- read_result("joint_adjusted_leg_means.csv")
+leg_vs_female <- read_result("joint_leg_males_vs_female.csv")
+joint_slopes <- read_result("joint_leg_slopes.csv")
+joint_group_slope_contrasts <- read_result("joint_group_slopes_within_leg.csv")
+three_way_contrasts <- read_result("joint_three_way_slope_contrasts.csv")
+segment_tests <- read_result("segment_slope_model_tests.csv")
+
+ear_tests <- read_result("ear_nested_model_tests.csv")
+eye_tests <- read_result("eye_nested_model_tests.csv")
+models <- readRDS(file.path(models_dir, "weta_trait_models.rds"))
+
+# Sample and body-size summaries -----------------------------
+get_group_row <- function(group_name) {
+  group_summary |> filter(.data$group == group_name) |> slice(1)
+}
+
+female_desc <- get_group_row("female")
+eighth_desc <- get_group_row("eighth")
+ninth_desc  <- get_group_row("ninth")
+tenth_desc  <- get_group_row("tenth")
+
+total_n <- sum(group_summary$n)
+
+# Joint locomotory-model terms -------------------------------
+leg_group_leg <- get_term(leg_anova, "group:leg")
+leg_three_way <- get_term(leg_anova, "logP_c:group:leg")
+leg_size_group <- get_term(leg_anova, "logP_c:group")
+
+# Male-versus-female leg contrasts at pronotum = 7.2 mm ------
+fore_eighth <- get_vs_female(leg_vs_female, "eighth", "Foreleg")
+fore_ninth  <- get_vs_female(leg_vs_female, "ninth", "Foreleg")
+fore_tenth  <- get_vs_female(leg_vs_female, "tenth", "Foreleg")
+
+mid_eighth <- get_vs_female(leg_vs_female, "eighth", "Midleg")
+mid_ninth  <- get_vs_female(leg_vs_female, "ninth", "Midleg")
+mid_tenth  <- get_vs_female(leg_vs_female, "tenth", "Midleg")
+
+hind_eighth <- get_vs_female(leg_vs_female, "eighth", "Hindleg")
+hind_ninth  <- get_vs_female(leg_vs_female, "ninth", "Hindleg")
+hind_tenth  <- get_vs_female(leg_vs_female, "tenth", "Hindleg")
+
+# Identify the allometric trend column without assuming its exact name.
+trend_column <- names(joint_slopes)[str_detect(names(joint_slopes), "\\.trend$")][1]
+if (is.na(trend_column)) {
+  stop("Could not identify the allometric trend column in joint_leg_slopes.csv")
+}
+
+joint_slopes_display <- joint_slopes |>
+  transmute(
+    Group = str_to_sentence(as.character(group)),
+    Leg = as.character(leg),
+    Slope = .data[[trend_column]],
+    `Lower 95% CI` = lower.CL,
+    `Upper 95% CI` = upper.CL
+  )
+
+# Robust specific slope contrasts ----------------------------
+hind_female_tenth <- joint_group_slope_contrasts |>
+  filter(
+    .data$leg == "Hindleg",
+    str_detect(
+      .data$contrast,
+      regex("female\\s*-\\s*tenth", ignore_case = TRUE)
+    )
+  ) |>
+  slice(1)
+
+female_eighth_fore_hind <- three_way_contrasts |>
+  filter(
+    str_detect(
+      .data$group_pairwise,
+      regex("female\\s*-\\s*eighth", ignore_case = TRUE)
+    ),
+    str_detect(
+      .data$leg_pairwise,
+      regex("Foreleg\\s*-\\s*Hindleg", ignore_case = TRUE)
+    )
+  ) |>
+  slice(1)
+
+# Segment-level summary --------------------------------------
+segment_tests_display <- segment_tests |>
+  mutate(
+    Segment = str_remove(.data$analysis, ":.*$"),
+    Result = if_else(.data$p_value < alpha, "Different slopes", "Common slope adequate")
+  ) |>
+  select(
+    Segment,
+    numerator_df,
+    full_residual_df,
+    F,
+    p_value,
+    Result
+  )
+
+significant_segments <- segment_tests_display |>
+  filter(.data$p_value < alpha) |>
+  pull(.data$Segment)
+
+segment_result_text <- if (length(significant_segments) == 0) {
+  "None of the six segment-level analyses supported group-specific allometric slopes."
+} else {
+  paste0(
+    "Group-specific allometric slopes were supported for ",
+    paste(significant_segments, collapse = ", "),
+    "; the remaining segment models were adequately described by common slopes."
+  )
+}
+
+# Sensory model selection and summaries ----------------------
+ear_tibia_test <- get_test(ear_tests, "Ear: group x foretibia")
+ear_pronotum_test <- get_test(ear_tests, "Ear: group x pronotum")
+
+eye_head_test <- get_test(eye_tests, "Eye: group x head size")
+eye_pronotum_test <- get_test(eye_tests, "Eye: group x pronotum")
+
+# Use the most complex model still supported by the nested tests.
+ear_final_model <- if (ear_tibia_test$p_value < alpha) {
+  models$ear_full
+} else if (ear_pronotum_test$p_value < alpha) {
+  models$ear_no_tibia_interaction
+} else {
+  models$ear_additive
+}
+
+eye_final_model <- if (eye_head_test$p_value < alpha) {
+  models$eye_full
+} else if (eye_pronotum_test$p_value < alpha) {
+  models$eye_no_head_interaction
+} else {
+  models$eye_additive
+}
+
+# Ear slopes and adjusted group values.
+ear_slope_object <- if (ear_tibia_test$p_value < alpha) {
+  emtrends(ear_final_model, ~ group, var = "log_foretibia_c")
+} else {
+  emtrends(ear_final_model, ~ 1, var = "log_foretibia_c")
+}
+
+ear_slope_table <- summary(ear_slope_object, infer = c(TRUE, TRUE)) |>
+  as_tibble()
+
+ear_trend_column <- names(ear_slope_table)[str_detect(names(ear_slope_table), "\\.trend$")][1]
+
+ear_emm <- emmeans(
+  ear_final_model,
+  ~ group,
+  at = list(logP_c = 0, log_foretibia_c = 0)
+)
+
+ear_vsf <- contrast(
+  ear_emm,
+  method = "trt.vs.ctrl",
+  ref = 1,
+  adjust = "holm"
+) |>
+  summary(infer = c(TRUE, TRUE), adjust = "holm") |>
+  as_tibble() |>
+  mutate(
+    ratio = exp(estimate),
+    ratio_lower = exp(lower.CL),
+    ratio_upper = exp(upper.CL),
+    percent_difference = 100 * (ratio - 1),
+    area_ratio = ratio^2,
+    area_percent_difference = 100 * (area_ratio - 1)
+  )
+
+ear_emm_display <- summary(ear_emm, infer = c(TRUE, TRUE)) |>
+  as_tibble() |>
+  transmute(
+    Group = str_to_sentence(as.character(group)),
+    `Predicted ear area` = exp(2 * emmean),
+    `Lower 95% CI` = exp(2 * lower.CL),
+    `Upper 95% CI` = exp(2 * upper.CL)
+  )
+
+if (ear_tibia_test$p_value < alpha) {
+  ear_slope_result_text <- paste0(
+    "The relationship between ear size and foretibia length differed among groups (",
+    "F(", fmt_num(ear_tibia_test$numerator_df, 0), ", ",
+    fmt_num(ear_tibia_test$full_residual_df, 0), ") = ",
+    fmt_num(ear_tibia_test$F, 2), ", ", fmt_p(ear_tibia_test$p_value), ")."
+  )
+} else {
+  ear_slope_row <- ear_slope_table |> slice(1)
+  ear_slope_result_text <- paste0(
+    "The ear–foretibia slope did not differ among groups (",
+    "F(", fmt_num(ear_tibia_test$numerator_df, 0), ", ",
+    fmt_num(ear_tibia_test$full_residual_df, 0), ") = ",
+    fmt_num(ear_tibia_test$F, 2), ", ", fmt_p(ear_tibia_test$p_value), "). ",
+    "Across groups, linearized ear size increased with foretibia length with an allometric slope of ",
+    fmt_num(ear_slope_row[[ear_trend_column]], 3),
+    " (95% CI ", fmt_num(ear_slope_row$lower.CL, 3), "–",
+    fmt_num(ear_slope_row$upper.CL, 3), ")."
+  )
+}
+
+ear_group_result_text <- describe_vs_female(
+  ear_vsf,
+  percent_column = "area_percent_difference",
+  positive = "larger in area",
+  negative = "smaller in area"
+)
+
+# Eye slopes and adjusted group values.
+eye_slope_object <- if (eye_head_test$p_value < alpha) {
+  emtrends(eye_final_model, ~ group, var = "log_head_size_c")
+} else {
+  emtrends(eye_final_model, ~ 1, var = "log_head_size_c")
+}
+
+eye_slope_table <- summary(eye_slope_object, infer = c(TRUE, TRUE)) |>
+  as_tibble()
+
+eye_trend_column <- names(eye_slope_table)[str_detect(names(eye_slope_table), "\\.trend$")][1]
+
+eye_emm <- emmeans(
+  eye_final_model,
+  ~ group,
+  at = list(logP_c = 0, log_head_size_c = 0)
+)
+
+eye_vsf <- contrast(
+  eye_emm,
+  method = "trt.vs.ctrl",
+  ref = 1,
+  adjust = "holm"
+) |>
+  summary(infer = c(TRUE, TRUE), adjust = "holm") |>
+  as_tibble() |>
+  mutate(
+    ratio = exp(estimate),
+    ratio_lower = exp(lower.CL),
+    ratio_upper = exp(upper.CL),
+    percent_difference = 100 * (ratio - 1)
+  )
+
+eye_emm_display <- summary(eye_emm, infer = c(TRUE, TRUE)) |>
+  as_tibble() |>
+  transmute(
+    Group = str_to_sentence(as.character(group)),
+    `Predicted eye length` = exp(emmean),
+    `Lower 95% CI` = exp(lower.CL),
+    `Upper 95% CI` = exp(upper.CL)
+  )
+
+if (eye_head_test$p_value < alpha) {
+  eye_slope_result_text <- paste0(
+    "The relationship between eye length and head size differed among groups (",
+    "F(", fmt_num(eye_head_test$numerator_df, 0), ", ",
+    fmt_num(eye_head_test$full_residual_df, 0), ") = ",
+    fmt_num(eye_head_test$F, 2), ", ", fmt_p(eye_head_test$p_value), ")."
+  )
+} else {
+  eye_slope_row <- eye_slope_table |> slice(1)
+  eye_slope_result_text <- paste0(
+    "The eye–head-size slope did not differ among groups (",
+    "F(", fmt_num(eye_head_test$numerator_df, 0), ", ",
+    fmt_num(eye_head_test$full_residual_df, 0), ") = ",
+    fmt_num(eye_head_test$F, 2), ", ", fmt_p(eye_head_test$p_value), "). ",
+    "Across groups, eye length scaled with head size with an allometric slope of ",
+    fmt_num(eye_slope_row[[eye_trend_column]], 3),
+    " (95% CI ", fmt_num(eye_slope_row$lower.CL, 3), "–",
+    fmt_num(eye_slope_row$upper.CL, 3), ")."
+  )
+}
+
+eye_group_result_text <- describe_vs_female(
+  eye_vsf,
+  percent_column = "percent_difference",
+  positive = "longer",
+  negative = "shorter"
+)
+```
+
+# Results
+
+## Sample composition and body-size overlap
+
+The analysis included `r total_n` individuals: `r female_desc$n` females, `r eighth_desc$n` eighth-instar males, `r ninth_desc$n` ninth-instar males, and `r tenth_desc$n` tenth-instar males. Mean pronotum length was `r fmt_num(female_desc$pronotum_mean, 2)` ± `r fmt_num(female_desc$pronotum_sd, 2)` mm in females, `r fmt_num(eighth_desc$pronotum_mean, 2)` ± `r fmt_num(eighth_desc$pronotum_sd, 2)` mm in eighth-instar males, `r fmt_num(ninth_desc$pronotum_mean, 2)` ± `r fmt_num(ninth_desc$pronotum_sd, 2)` mm in ninth-instar males, and `r fmt_num(tenth_desc$pronotum_mean, 2)` ± `r fmt_num(tenth_desc$pronotum_sd, 2)` mm in tenth-instar males. All four groups overlapped in pronotum length from `r fmt_num(common_body_size$common_lower, 2)` to `r fmt_num(common_body_size$common_upper, 2)` mm. The reference size of `r fmt_num(common_body_size$reference_pronotum, 1)` mm used for adjusted comparisons therefore lay within the region of common support.
+
+```{r}
+#| label: tbl-group-summary
+#| tbl-cap: "Sample sizes and descriptive body-size statistics for females and the three male developmental groups."
+
+group_summary |>
+  transmute(
+    Group = str_to_sentence(as.character(group)),
+    `Sample size` = n,
+    `Pronotum mean` = round(pronotum_mean, 2),
+    `Pronotum SD` = round(pronotum_sd, 2),
+    `Pronotum minimum` = round(pronotum_min, 2),
+    `Pronotum maximum` = round(pronotum_max, 2)
+  ) |>
+  knitr::kable(align = c("l", "r", "r", "r", "r", "r"))
+```
+
+## Locomotory morphology
+
+### Relative allocation among leg pairs
+
+The joint repeated-trait model showed that group differences depended strongly on leg identity (`r fmt_f(leg_group_leg)`). Thus, the male developmental groups were not uniformly longer- or shorter-legged than females; instead, the magnitude and direction of group differences varied among forelegs, midlegs, and hindlegs. There was also evidence that group-specific allometric slopes depended on leg identity (`r fmt_f(leg_three_way)`), although this three-way effect was much weaker than the group-by-leg interaction. The body-size-by-group interaction was also supported within the joint model (`r fmt_f(leg_size_group)`).
+
+At a pronotum length of 7.2 mm, eighth-, ninth-, and tenth-instar males had forelegs that were `r effect_text(fore_eighth)`, `r effect_text(fore_ninth)`, and `r effect_text(fore_tenth)`, respectively, than those of females. Midlegs were `r effect_text(mid_eighth)`, `r effect_text(mid_ninth)`, and `r effect_text(mid_tenth)`, respectively. Hindlegs showed a contrasting pattern: eighth-instar males had hindlegs that were `r effect_text(hind_eighth)`, ninth-instar males had hindlegs that were `r effect_text(hind_ninth)`, and tenth-instar males had hindlegs that were `r effect_text(hind_tenth)` relative to females. Overall, foreleg enlargement increased progressively across the male developmental groups, midleg enlargement was concentrated in the ninth- and tenth-instar groups, and hindleg morphology followed a different trajectory.
+
+```{r}
+#| label: fig-adjusted-legs
+#| fig-cap: "Size-adjusted predicted foreleg, midleg, and hindleg lengths for females and the three male developmental groups at a pronotum length of 7.2 mm. Error bars are 95% confidence intervals."
+#| out-width: "100%"
+
+knitr::include_graphics(file.path(figures_dir, "adjusted_leg_means.png"))
+```
+
+```{r}
+#| label: tbl-leg-contrasts
+#| tbl-cap: "Male–female contrasts in predicted leg length at a pronotum length of 7.2 mm. Percent differences are expressed relative to females; positive values indicate longer legs in males. P-values are Holm-adjusted within leg pair."
+
+leg_vs_female |>
+  transmute(
+    Leg = leg,
+    Contrast = contrast,
+    `Percent difference` = round(percent_difference, 1),
+    `Ratio lower 95% CI` = round(ratio_lower, 3),
+    `Ratio upper 95% CI` = round(ratio_upper, 3),
+    `Adjusted p` = case_when(
+      p.value < 0.001 ~ "<0.001",
+      TRUE ~ sprintf("%.3f", p.value)
+    )
+  ) |>
+  knitr::kable(align = c("l", "l", "r", "r", "r", "r"))
+```
+
+### Allometric variation
+
+Estimated allometric slopes were below one for all group-by-leg combinations, indicating negative allometry of leg length relative to pronotum length. Tenth-instar males had the shallowest estimated slope for all three leg pairs. After Holm correction within each leg, the clearest specific contrast was the hindleg slope difference between females and tenth-instar males (difference = `r fmt_num(hind_female_tenth$estimate, 3)`, `r fmt_p(hind_female_tenth$p.value)`). The exhaustive decomposition of the three-way interaction further showed that the female–eighth-instar slope contrast differed between forelegs and hindlegs (difference-in-differences = `r fmt_num(female_eighth_fore_hind$estimate, 3)`, `r fmt_p(female_eighth_fore_hind$p.value)`). Females and eighth-instar males therefore had nearly parallel foreleg allometries, whereas their hindleg allometries were more divergent. Other corrected slope contrasts were not clearly supported.
+
+```{r}
+#| label: tbl-leg-slopes
+#| tbl-cap: "Group- and leg-specific allometric slopes from the joint repeated-trait model."
+
+joint_slopes_display |>
+  mutate(across(where(is.numeric), ~ round(.x, 3))) |>
+  knitr::kable(align = c("l", "l", "r", "r", "r"))
+```
+
+```{r}
+#| label: fig-leg-allometries
+#| fig-cap: "Log–log relationships between pronotum length and total foreleg, midleg, and hindleg length in females and the three male developmental groups."
+#| out-width: "100%"
+
+knitr::include_graphics(file.path(figures_dir, "leg_allometries.png"))
+```
+
+### Femur and tibia components
+
+`r segment_result_text` These secondary analyses indicate which femur or tibia components contributed to the group-level differences in total leg allometry.
+
+```{r}
+#| label: tbl-segment-tests
+#| tbl-cap: "Nested-model tests of group-specific allometric slopes for each femur and tibia component."
+
+segment_tests_display |>
+  mutate(
+    F = round(F, 2),
+    p_value = if_else(p_value < 0.001, "<0.001", sprintf("%.3f", p_value))
+  ) |>
+  rename(
+    `Numerator df` = numerator_df,
+    `Residual df` = full_residual_df,
+    `P-value` = p_value
+  ) |>
+  knitr::kable(align = c("l", "r", "r", "r", "r", "l"))
+```
+
+## Sensory morphology
+
+### Ear size and foretibia length
+
+`r ear_slope_result_text` The ear–pronotum interaction was also `r ifelse(ear_pronotum_test$p_value < alpha, "supported", "not supported")` (`r paste0("F(", fmt_num(ear_pronotum_test$numerator_df, 0), ", ", fmt_num(ear_pronotum_test$full_residual_df, 0), ") = ", fmt_num(ear_pronotum_test$F, 2), ", ", fmt_p(ear_pronotum_test$p_value))`). After accounting for pronotum size and foretibia length, `r ear_group_result_text`.
+
+```{r}
+#| label: tbl-ear-means
+#| tbl-cap: "Adjusted predicted ear area at a pronotum length of 7.2 mm and mean foretibia length."
+
+ear_emm_display |>
+  mutate(across(where(is.numeric), ~ round(.x, 3))) |>
+  knitr::kable(align = c("l", "r", "r", "r"))
+```
+
+```{r}
+#| label: fig-ear
+#| fig-cap: "Relationship between linearized ear size and foretibia length in females and the three male developmental groups."
+#| out-width: "80%"
+
+knitr::include_graphics(file.path(figures_dir, "ear_foretibia_relationship.png"))
+```
+
+### Eye length and head size
+
+`r eye_slope_result_text` The eye–pronotum interaction was `r ifelse(eye_pronotum_test$p_value < alpha, "supported", "not supported")` (`r paste0("F(", fmt_num(eye_pronotum_test$numerator_df, 0), ", ", fmt_num(eye_pronotum_test$full_residual_df, 0), ") = ", fmt_num(eye_pronotum_test$F, 2), ", ", fmt_p(eye_pronotum_test$p_value))`). At a pronotum length of 7.2 mm and mean head size, `r eye_group_result_text`.
+
+```{r}
+#| label: tbl-eye-means
+#| tbl-cap: "Adjusted predicted eye length at a pronotum length of 7.2 mm and mean head size."
+
+eye_emm_display |>
+  mutate(across(where(is.numeric), ~ round(.x, 3))) |>
+  knitr::kable(align = c("l", "r", "r", "r"))
+```
+
+```{r}
+#| label: fig-eye
+#| fig-cap: "Relationship between eye length and composite head size in females and the three male developmental groups."
+#| out-width: "80%"
+
+knitr::include_graphics(file.path(figures_dir, "eye_head_relationship.png"))
+```
+
+## Model diagnostics
+
+Observed and model-predicted trait distributions corresponded closely. Residuals were approximately normally distributed and showed broadly homogeneous variance, with only minor curvature near the extremes of the fitted ranges. Collinearity remained below conventional concern thresholds, and no observation showed sufficient influence to justify exclusion after the underlying measurements had been checked. The log–log linear models and the repeated-trait mixed model were therefore retained for inference.
+
+<!--
+EDITORIAL NOTES FOR THE NEXT DRAFT
+1. Decide which tables remain in the main text and which move to supplementary material.
+2. Replace generic table/figure captions with journal-specific formatting.
+3. Once the biological framing is settled, shorten the segment-level paragraph if those analyses are supplementary.
+4. Integrate this Results section with the final Methods and Discussion.
+-->
