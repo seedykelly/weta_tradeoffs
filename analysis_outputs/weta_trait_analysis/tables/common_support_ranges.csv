@@ -1,0 +1,4 @@
+trait,common_lower,common_upper,has_common_overlap
+pronotum,6.988,7.488,TRUE
+head_size,16.81794696150514,11.246482383394374,FALSE
+foretibia,13.4625,13.1965,FALSE

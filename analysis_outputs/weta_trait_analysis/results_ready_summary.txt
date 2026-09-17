@@ -1,21 +1,54 @@
 WELLINGTON TREE WETA MORPHOLOGICAL ALLOCATION
-Analysis run: 2026-07-10 17:07:38 
+Analysis run: 2026-07-11 09:55:00 
 
-REFERENCE PRONOTUM
+REFERENCE PRONOTUM AND COMMON SUPPORT
 [1] 7.2
 # A tibble: 1 × 4
   common_lower common_upper reference_pronotum reference_inside_common_range
          <dbl>        <dbl>              <dbl> <lgl>                        
 1         6.99         7.49                7.2 TRUE                         
+# A tibble: 3 × 4
+  trait     common_lower common_upper has_common_overlap
+  <chr>            <dbl>        <dbl> <lgl>             
+1 pronotum          6.99         7.49 TRUE              
+2 head_size        16.8         11.2  FALSE             
+3 foretibia        13.5         13.2  FALSE             
 
 GROUP DESCRIPTIVES
 # A tibble: 4 × 22
-  group      n pronotum_n pronotum_mean pronotum_sd pronotum_min pronotum_max foreleg_n foreleg_mean foreleg_sd midleg_n midleg_mean midleg_sd hindleg_n hindleg_mean hindleg_sd ear_n ear_mean ear_sd eye_n eye_mean eye_sd
-  <fct>  <int>      <int>         <dbl>       <dbl>        <dbl>        <dbl>     <int>        <dbl>      <dbl>    <int>       <dbl>     <dbl>     <int>        <dbl>      <dbl> <int>    <dbl>  <dbl> <int>    <dbl>  <dbl>
-1 female   118        118          7.81       0.411         6.86         8.60       118         25.1      1.23       118        24.8     1.21        118         42.2       2.40   118     3.09  0.331   118     2.61  0.160
-2 eighth    78         78          6.37       0.369         5.71         7.49        78         22.9      1.29        77        22.0     1.22         76         34.2       1.82    78     2.50  0.266    78     2.50  0.172
-3 ninth     79         79          6.93       0.321         6.20         7.73        79         25.8      1.17        79        24.6     1.14         79         38.5       1.68    79     2.98  0.334    79     2.81  0.184
-4 tenth     38         38          7.52       0.307         6.99         8.32        38         28.1      0.845       38        26.6     0.794        38         41.6       1.37    38     3.42  0.330    38     3.19  0.173
+  group      n pronotum_n pronotum_mean pronotum_sd pronotum_min pronotum_max foreleg_n foreleg_mean foreleg_sd midleg_n midleg_mean midleg_sd
+  <fct>  <int>      <int>         <dbl>       <dbl>        <dbl>        <dbl>     <int>        <dbl>      <dbl>    <int>       <dbl>     <dbl>
+1 female   118        118          7.81       0.411         6.86         8.60       118         25.1      1.23       118        24.8     1.21 
+2 eighth    78         78          6.37       0.369         5.71         7.49        78         22.9      1.29        77        22.0     1.22 
+3 ninth     79         79          6.93       0.321         6.20         7.73        79         25.8      1.17        79        24.6     1.14 
+4 tenth     38         38          7.52       0.307         6.99         8.32        38         28.1      0.845       38        26.6     0.794
+# ℹ 9 more variables: hindleg_n <int>, hindleg_mean <dbl>, hindleg_sd <dbl>, ear_n <int>, ear_mean <dbl>, ear_sd <dbl>, eye_n <int>,
+#   eye_mean <dbl>, eye_sd <dbl>
+
+RELATIVE-TRAIT ALLOMETRIES
+# A tibble: 2 × 9
+  analysis                  reduced_residual_df full_residual_df numerator_df reduced_RSS full_RSS sum_of_squares     F p_value
+  <chr>                                   <dbl>            <dbl>        <dbl>       <dbl>    <dbl>          <dbl> <dbl>   <dbl>
+1 Head size: logP_c x group                 308              305            3       0.742    0.713        0.0289   4.12 0.00689
+2 Foretibia: logP_c x group                 308              305            3       0.355    0.350        0.00500  1.45 0.228  
+# A tibble: 8 × 9
+  trait     group  logP_c.trend     SE    df lower.CL upper.CL t.ratio  p.value
+  <chr>     <fct>         <dbl>  <dbl> <dbl>    <dbl>    <dbl>   <dbl>    <dbl>
+1 Head size female        0.941 0.0843   305   0.775     1.11    11.2  1.73e-24
+2 Head size eighth        1.15  0.0961   305   0.964     1.34    12.0  1.87e-27
+3 Head size ninth         0.879 0.118    305   0.646     1.11     7.44 1.05e-12
+4 Head size tenth         0.413 0.196    305   0.0276    0.798    2.11 3.58e- 2
+5 Foretibia female        0.671 0.0590   305   0.555     0.788   11.4  3.24e-25
+6 Foretibia eighth        0.632 0.0673   305   0.500     0.764    9.39 1.42e-18
+7 Foretibia ninth         0.559 0.0827   305   0.396     0.722    6.76 7.15e-11
+8 Foretibia tenth         0.380 0.137    305   0.111     0.650    2.77 5.88e- 3
+# A tibble: 4 × 5
+  group  mean_relative_head_size mean_relative_foretibia_size sd_relative_head_size sd_relative_foretibia_size
+  <fct>                    <dbl>                        <dbl>                 <dbl>                      <dbl>
+1 female                3.45e-18                     2.31e-18                0.0371                     0.0322
+2 eighth                2.02e-18                    -2.42e-18                0.0565                     0.0356
+3 ninth                -2.11e-18                    -1.23e-18                0.0586                     0.0360
+4 tenth                 3.65e-19                    -3.29e-18                0.0321                     0.0286
 
 SEPARATE LEG SLOPE MODEL TESTS
 # A tibble: 3 × 9
@@ -41,29 +74,6 @@ SEPARATE LEG SLOPES
 10 Hindleg eighth        0.658 0.0726   303   0.516     0.801    9.07 1.52e-17
 11 Hindleg ninth         0.569 0.0886   303   0.395     0.744    6.43 5.07e-10
 12 Hindleg tenth         0.273 0.147    303  -0.0164    0.562    1.86 6.44e- 2
-
-SEPARATE LEG SLOPE CONTRASTS
-# A tibble: 18 × 9
-   leg     contrast        estimate     SE    df lower.CL upper.CL t.ratio p.value
-   <chr>   <chr>              <dbl>  <dbl> <dbl>    <dbl>    <dbl>   <dbl>   <dbl>
- 1 Foreleg female - eighth  -0.0301 0.0895   305 -0.268      0.207  -0.337 0.736  
- 2 Foreleg female - ninth    0.107  0.102    305 -0.163      0.377   1.05  0.598  
- 3 Foreleg female - tenth    0.379  0.149    305 -0.0173     0.775   2.54  0.0579 
- 4 Foreleg eighth - ninth    0.137  0.107    305 -0.146      0.420   1.29  0.598  
- 5 Foreleg eighth - tenth    0.409  0.153    305  0.00375    0.815   2.68  0.0466 
- 6 Foreleg ninth - tenth     0.272  0.160    305 -0.153      0.697   1.70  0.361  
- 7 Midleg  female - eighth   0.0324 0.0891   304 -0.204      0.269   0.364 1      
- 8 Midleg  female - ninth    0.0728 0.101    304 -0.195      0.341   0.721 1      
- 9 Midleg  female - tenth    0.399  0.148    304  0.00454    0.793   2.69  0.0457 
-10 Midleg  eighth - ninth    0.0404 0.106    304 -0.241      0.322   0.381 1      
-11 Midleg  eighth - tenth    0.366  0.152    304 -0.0371     0.770   2.41  0.0825 
-12 Midleg  ninth - tenth     0.326  0.159    304 -0.0969     0.749   2.05  0.166  
-13 Hindleg female - eighth   0.151  0.0963   303 -0.105      0.407   1.57  0.254  
-14 Hindleg female - ninth    0.240  0.109    303 -0.0493     0.529   2.20  0.113  
-15 Hindleg female - tenth    0.537  0.160    303  0.112      0.961   3.36  0.00536
-16 Hindleg eighth - ninth    0.0888 0.115    303 -0.215      0.393   0.776 0.439  
-17 Hindleg eighth - tenth    0.386  0.164    303 -0.0494     0.821   2.35  0.0960 
-18 Hindleg ninth - tenth     0.297  0.172    303 -0.159      0.752   1.73  0.254  
 
 JOINT LEG MODEL TYPE III ANOVA
 # A tibble: 7 × 7
@@ -94,19 +104,34 @@ JOINT ADJUSTED LEG MEANS
 11 ninth  Hindleg   3.67 0.00510  448.     3.66     3.68    721.       0 Leg length original length      39.4  39.0  39.8
 12 tenth  Hindleg   3.72 0.00826  448.     3.70     3.73    450.       0 Leg length original length      41.1  40.4  41.8
 
-JOINT MALE-VERSUS-FEMALE LEG CONTRASTS
+JOINT STRATEGY CONTRASTS WITHIN LEG
 # A tibble: 9 × 14
-  contrast        leg     estimate      SE    df lower.CL upper.CL t.ratio  p.value outcome    ratio ratio_lower ratio_upper percent_difference
-  <fct>           <fct>      <dbl>   <dbl> <dbl>    <dbl>    <dbl>   <dbl>    <dbl> <chr>      <dbl>       <dbl>       <dbl>              <dbl>
-1 eighth - female Foreleg  0.0567  0.0111   448.  0.0301    0.0833   5.13  4.37e- 7 Leg length 1.06        1.03        1.09               5.83 
-2 ninth - female  Foreleg  0.108   0.00771  448.  0.0891    0.126   14.0   1.08e-36 Leg length 1.11        1.09        1.13              11.4  
-3 tenth - female  Foreleg  0.157   0.0101   448.  0.132     0.181   15.5   2.55e-43 Leg length 1.17        1.14        1.20              16.9  
-4 eighth - female Midleg   0.0211  0.0111   450. -0.00550   0.0477   1.91  5.72e- 2 Leg length 1.02        0.995       1.05               2.13 
-5 ninth - female  Midleg   0.0726  0.00771  448.  0.0541    0.0911   9.41  5.22e-19 Leg length 1.08        1.06        1.10               7.53 
-6 tenth - female  Midleg   0.115   0.0101   448.  0.0904    0.139   11.4   5.07e-26 Leg length 1.12        1.09        1.15              12.2  
-7 eighth - female Hindleg -0.0654  0.0111   450. -0.0920   -0.0388  -5.90  2.10e- 8 Leg length 0.937       0.912       0.962             -6.33 
-8 ninth - female  Hindleg -0.00456 0.00771  448. -0.0231    0.0140  -0.591 5.55e- 1 Leg length 0.995       0.977       1.01              -0.455
-9 tenth - female  Hindleg  0.0385  0.0101   448.  0.0143    0.0628   3.82  3.05e- 4 Leg length 1.04        1.01        1.06               3.93 
+  contrast               leg   estimate      SE    df lower.CL upper.CL t.ratio  p.value outcome ratio ratio_lower ratio_upper percent_difference
+  <fct>                  <fct>    <dbl>   <dbl> <dbl>    <dbl>    <dbl>   <dbl>    <dbl> <chr>   <dbl>       <dbl>       <dbl>              <dbl>
+1 eighth - tenth         Fore… -0.0998  0.0125   448.  -0.130   -0.0697  -7.97  2.64e-14 Leg le… 0.905       0.878       0.933             -9.50 
+2 ninth - midpoint(eigh… Fore…  0.00101 0.00807  448.  -0.0184   0.0204   0.125 9.01e- 1 Leg le… 1.00        0.982       1.02               0.101
+3 tenth - female         Fore…  0.157   0.0101   448.   0.132    0.181   15.5   2.55e-43 Leg le… 1.17        1.14        1.20              16.9  
+4 eighth - tenth         Midl… -0.0936  0.0125   450.  -0.124   -0.0634  -7.46  9.00e-13 Leg le… 0.911       0.884       0.939             -8.93 
+5 ninth - midpoint(eigh… Midl…  0.00470 0.00808  449.  -0.0147   0.0241   0.581 5.61e- 1 Leg le… 1.00        0.985       1.02               0.471
+6 tenth - female         Midl…  0.115   0.0101   448.   0.0904   0.139   11.4   5.07e-26 Leg le… 1.12        1.09        1.15              12.2  
+7 eighth - tenth         Hind… -0.104   0.0125   450.  -0.134   -0.0738  -8.28  4.11e-15 Leg le… 0.901       0.875       0.929             -9.87 
+8 ninth - midpoint(eigh… Hind…  0.00888 0.00808  449.  -0.0105   0.0283   1.10  2.73e- 1 Leg le… 1.01        0.990       1.03               0.892
+9 tenth - female         Hind…  0.0385  0.0101   448.   0.0143   0.0628   3.82  3.05e- 4 Leg le… 1.04        1.01        1.06               3.93 
+
+ANTERIOR-POSTERIOR ALLOCATION DIFFERENCES
+# A tibble: 9 × 13
+  contrast          estimate      SE    df lower.CL upper.CL t.ratio  p.value outcome ratio_of_ratios ratio_of_ratios_lower ratio_of_ratios_upper
+  <chr>                <dbl>   <dbl> <dbl>    <dbl>    <dbl>   <dbl>    <dbl> <chr>             <dbl>                 <dbl>                 <dbl>
+1 tenth - eighth: … -0.00408 0.00874  640.  -0.0284  0.0202   -0.467 1   e+ 0 Anteri…           0.996                 0.972                  1.02
+2 tenth - eighth: … -0.0104  0.00874  639.  -0.0347  0.0140   -1.19  1   e+ 0 Anteri…           0.990                 0.966                  1.01
+3 tenth - eighth: … -0.00722 0.00757  640.  -0.0283  0.0138   -0.954 1   e+ 0 Anteri…           0.993                 0.972                  1.01
+4 ninth - midpoint… -0.00787 0.00563  640.  -0.0235  0.00779  -1.40  9.75e- 1 Anteri…           0.992                 0.977                  1.01
+5 ninth - midpoint… -0.00418 0.00563  639.  -0.0198  0.0115   -0.743 1   e+ 0 Anteri…           0.996                 0.980                  1.01
+6 ninth - midpoint… -0.00603 0.00488  640.  -0.0196  0.00754  -1.24  1   e+ 0 Anteri…           0.994                 0.981                  1.01
+7 tenth - female: …  0.118   0.00702  639.   0.0985  0.138    16.8   6.89e-52 Anteri…           1.13                  1.10                   1.15
+8 tenth - female: …  0.0762  0.00702  639.   0.0566  0.0957   10.9   1.85e-24 Anteri…           1.08                  1.06                   1.10
+9 tenth - female: …  0.0971  0.00608  639.   0.0802  0.114    16.0   1.07e-47 Anteri…           1.10                  1.08                   1.12
+# ℹ 1 more variable: percent_difference <dbl>
 
 JOINT LEG SLOPES
 # A tibble: 12 × 9
@@ -125,68 +150,52 @@ JOINT LEG SLOPES
 11 ninth  Hindleg        0.569 0.0846  448.  0.403      0.736    6.73 5.27e-11
 12 tenth  Hindleg        0.273 0.140   448. -0.00313    0.548    1.94 5.26e- 2
 
-JOINT GROUP SLOPE CONTRASTS WITHIN LEG
-# A tibble: 18 × 9
-   contrast        leg     estimate     SE    df lower.CL upper.CL t.ratio p.value
-   <fct>           <fct>      <dbl>  <dbl> <dbl>    <dbl>    <dbl>   <dbl>   <dbl>
- 1 female - eighth Foreleg  -0.0301 0.0916  448. -0.273      0.213  -0.329 0.742  
- 2 female - ninth  Foreleg   0.107  0.104   448. -0.169      0.382   1.03  0.629  
- 3 female - tenth  Foreleg   0.379  0.153   448. -0.0258     0.784   2.48  0.0673 
- 4 eighth - ninth  Foreleg   0.137  0.109   448. -0.152      0.426   1.26  0.629  
- 5 eighth - tenth  Foreleg   0.409  0.156   448. -0.00502    0.823   2.62  0.0549 
- 6 ninth - tenth   Foreleg   0.272  0.164   448. -0.162      0.706   1.66  0.390  
- 7 female - eighth Midleg    0.0371 0.0916  448. -0.206      0.280   0.405 1      
- 8 female - ninth  Midleg    0.0728 0.104   448. -0.203      0.348   0.700 1      
- 9 female - tenth  Midleg    0.399  0.153   448. -0.00613    0.804   2.61  0.0562 
-10 eighth - ninth  Midleg    0.0358 0.109   448. -0.253      0.325   0.328 1      
-11 eighth - tenth  Midleg    0.362  0.156   448. -0.0526     0.776   2.31  0.106  
-12 ninth - tenth   Midleg    0.326  0.164   448. -0.108      0.760   1.99  0.189  
-13 female - eighth Hindleg   0.163  0.0917  450. -0.0803     0.406   1.77  0.212  
-14 female - ninth  Hindleg   0.240  0.104   448. -0.0358     0.515   2.31  0.0862 
-15 female - tenth  Hindleg   0.537  0.153   448.  0.132      0.941   3.51  0.00293
-16 eighth - ninth  Hindleg   0.0771 0.109   449. -0.212      0.366   0.706 0.481  
-17 eighth - tenth  Hindleg   0.374  0.156   449. -0.0404     0.788   2.39  0.0860 
-18 ninth - tenth   Hindleg   0.297  0.164   448. -0.137      0.731   1.81  0.212  
+HEAD-LEG COMPENSATION TYPE III ANOVA
+# A tibble: 11 × 7
+   term                          `Sum Sq` `Mean Sq` NumDF DenDF `F value` `Pr(>F)`
+   <chr>                            <dbl>     <dbl> <int> <dbl>     <dbl>    <dbl>
+ 1 logP_c                        0.0864    0.0864       1  312.   322.    6.24e-50
+ 2 group                         0.0731    0.0244       3  313.    90.7   2.97e-42
+ 3 leg                          11.7       5.85         2  623. 21774.    0       
+ 4 relative_head_size            0.0306    0.0306       1  312.   114.    7.35e-23
+ 5 logP_c:group                  0.00485   0.00162      3  312.     6.02  5.38e- 4
+ 6 logP_c:leg                    0.000207  0.000103     2  623.     0.385 6.80e- 1
+ 7 group:leg                     0.170     0.0284       6  623.   106.    1.29e-91
+ 8 group:relative_head_size      0.000976  0.000325     3  312.     1.21  3.06e- 1
+ 9 leg:relative_head_size        0.00247   0.00124      2  623.     4.60  1.04e- 2
+10 logP_c:group:leg              0.00367   0.000611     6  623.     2.27  3.52e- 2
+11 group:leg:relative_head_size  0.00841   0.00140      6  623.     5.22  2.94e- 5
 
-JOINT LEG SLOPE CONTRASTS WITHIN GROUP
+HEAD-LEG COMPENSATION SLOPES
 # A tibble: 12 × 9
-   contrast          group  estimate     SE    df lower.CL upper.CL t.ratio p.value
-   <fct>             <fct>     <dbl>  <dbl> <dbl>    <dbl>    <dbl>   <dbl>   <dbl>
- 1 Foreleg - Midleg  female -0.0167  0.0420  639.  -0.118   0.0842  -0.397   0.691 
- 2 Foreleg - Hindleg female -0.0986  0.0420  639.  -0.199   0.00230 -2.35    0.0579
- 3 Midleg - Hindleg  female -0.0819  0.0420  639.  -0.183   0.0190  -1.95    0.104 
- 4 Foreleg - Midleg  eighth  0.0505  0.0480  640.  -0.0646  0.166    1.05    0.585 
- 5 Foreleg - Hindleg eighth  0.0943  0.0481  640.  -0.0213  0.210    1.96    0.152 
- 6 Midleg - Hindleg  eighth  0.0438  0.0482  640.  -0.0718  0.159    0.908   0.585 
- 7 Foreleg - Midleg  ninth  -0.0507  0.0589  639.  -0.192   0.0906  -0.862   0.778 
- 8 Foreleg - Hindleg ninth   0.0343  0.0589  639.  -0.107   0.176    0.583   0.778 
- 9 Midleg - Hindleg  ninth   0.0851  0.0589  639.  -0.0563  0.226    1.44    0.447 
-10 Foreleg - Midleg  tenth   0.00301 0.0976  639.  -0.231   0.237    0.0308  1     
-11 Foreleg - Hindleg tenth   0.0591  0.0976  639.  -0.175   0.293    0.605   1     
-12 Midleg - Hindleg  tenth   0.0561  0.0976  639.  -0.178   0.290    0.574   1     
+   group  leg     relative_head_size.trend     SE    df lower.CL upper.CL t.ratio  p.value
+   <fct>  <fct>                      <dbl>  <dbl> <dbl>    <dbl>    <dbl>   <dbl>    <dbl>
+ 1 female Foreleg                    0.419 0.0705  527.   0.281     0.558    5.95 4.83e- 9
+ 2 eighth Foreleg                    0.459 0.0571  527.   0.346     0.571    8.03 6.28e-15
+ 3 ninth  Foreleg                    0.323 0.0547  527.   0.216     0.430    5.91 6.24e- 9
+ 4 tenth  Foreleg                    0.234 0.145   527.  -0.0504    0.519    1.62 1.07e- 1
+ 5 female Midleg                     0.422 0.0705  527.   0.283     0.560    5.98 4.04e- 9
+ 6 eighth Midleg                     0.472 0.0571  529.   0.359     0.584    8.25 1.23e-15
+ 7 ninth  Midleg                     0.361 0.0547  527.   0.253     0.468    6.60 1.02e-10
+ 8 tenth  Midleg                     0.367 0.145   527.   0.0823    0.652    2.53 1.16e- 2
+ 9 female Hindleg                    0.633 0.0705  527.   0.494     0.771    8.98 4.76e-18
+10 eighth Hindleg                    0.348 0.0573  534.   0.235     0.461    6.07 2.43e- 9
+11 ninth  Hindleg                    0.365 0.0547  527.   0.258     0.472    6.68 6.12e-11
+12 tenth  Hindleg                    0.533 0.145   527.   0.249     0.818    3.68 2.57e- 4
 
-THREE-WAY SLOPE CONTRASTS
-# A tibble: 18 × 9
-   group_pairwise  leg_pairwise      estimate     SE    df lower.CL  upper.CL t.ratio p.value
-   <fct>           <fct>                <dbl>  <dbl> <dbl>    <dbl>     <dbl>   <dbl>   <dbl>
- 1 female - eighth Foreleg - Midleg   -0.0672 0.0638  640.   -0.259  0.124     -1.05   1     
- 2 female - ninth  Foreleg - Midleg    0.0341 0.0724  639.   -0.183  0.251      0.471  1     
- 3 female - tenth  Foreleg - Midleg   -0.0197 0.106   639.   -0.339  0.300     -0.185  1     
- 4 eighth - ninth  Foreleg - Midleg    0.101  0.0760  640.   -0.127  0.329      1.33   1     
- 5 eighth - tenth  Foreleg - Midleg    0.0475 0.109   640.   -0.279  0.374      0.437  1     
- 6 ninth - tenth   Foreleg - Midleg   -0.0538 0.114   639.   -0.396  0.289     -0.471  1     
- 7 female - eighth Foreleg - Hindleg  -0.193  0.0639  640.   -0.385 -0.000949  -3.02   0.0476
- 8 female - ninth  Foreleg - Hindleg  -0.133  0.0724  639.   -0.350  0.0844    -1.84   1     
- 9 female - tenth  Foreleg - Hindleg  -0.158  0.106   639.   -0.477  0.162     -1.48   1     
-10 eighth - ninth  Foreleg - Hindleg   0.0600 0.0761  640.   -0.168  0.288      0.788  1     
-11 eighth - tenth  Foreleg - Hindleg   0.0352 0.109   640.   -0.292  0.362      0.323  1     
-12 ninth - tenth   Foreleg - Hindleg  -0.0248 0.114   639.   -0.367  0.318     -0.217  1     
-13 female - eighth Midleg - Hindleg   -0.126  0.0639  640.   -0.318  0.0663    -1.97   0.796 
-14 female - ninth  Midleg - Hindleg   -0.167  0.0724  639.   -0.384  0.0503    -2.31   0.363 
-15 female - tenth  Midleg - Hindleg   -0.138  0.106   639.   -0.457  0.181     -1.30   1     
-16 eighth - ninth  Midleg - Hindleg   -0.0413 0.0761  640.   -0.270  0.187     -0.543  1     
-17 eighth - tenth  Midleg - Hindleg   -0.0123 0.109   640.   -0.339  0.315     -0.113  1     
-18 ninth - tenth   Midleg - Hindleg    0.0290 0.114   639.   -0.313  0.371      0.254  1     
+HEAD-LEG PLANNED STRATEGY SLOPE CONTRASTS
+# A tibble: 9 × 9
+  contrast                       leg     estimate     SE    df lower.CL upper.CL t.ratio p.value
+  <fct>                          <fct>      <dbl>  <dbl> <dbl>    <dbl>    <dbl>   <dbl>   <dbl>
+1 eighth - tenth                 Foreleg   0.224  0.156   527.   -0.150    0.598   1.44    0.451
+2 ninth - midpoint(eighth,tenth) Foreleg  -0.0235 0.0951  527.   -0.252    0.205  -0.247   0.805
+3 tenth - female                 Foreleg  -0.185  0.161   527.   -0.572    0.202  -1.15    0.502
+4 eighth - tenth                 Midleg    0.105  0.156   528.   -0.270    0.479   0.671   1    
+5 ninth - midpoint(eighth,tenth) Midleg   -0.0588 0.0952  528.   -0.287    0.170  -0.618   1    
+6 tenth - female                 Midleg   -0.0546 0.161   527.   -0.442    0.332  -0.339   1    
+7 eighth - tenth                 Hindleg  -0.185  0.156   528.   -0.560    0.189  -1.19    0.705
+8 ninth - midpoint(eighth,tenth) Hindleg  -0.0757 0.0952  528.   -0.304    0.153  -0.795   0.854
+9 tenth - female                 Hindleg  -0.0994 0.161   527.   -0.486    0.288  -0.617   0.854
 
 SEGMENT MODEL TESTS
 # A tibble: 6 × 9
@@ -199,64 +208,113 @@ SEGMENT MODEL TESTS
 5 Hindfemur: logP_c x group                 307              304            3       0.425    0.410        0.0153   3.79 0.0107 
 6 Hindtibia: logP_c x group                 306              303            3       0.554    0.532        0.0221   4.20 0.00626
 
-EAR MODEL TESTS
-# A tibble: 2 × 9
-  analysis               reduced_residual_df full_residual_df numerator_df reduced_RSS full_RSS sum_of_squares     F p_value
-  <chr>                                <dbl>            <dbl>        <dbl>       <dbl>    <dbl>          <dbl> <dbl>   <dbl>
-1 Ear: group x foretibia                 304              301            3       0.413    0.407        0.00541 1.33    0.264
-2 Ear: group x pronotum                  307              304            3       0.416    0.413        0.00349 0.857   0.464
-# A tibble: 4 × 5
-  term            `Sum Sq`    Df `F value`  `Pr(>F)`
-  <chr>              <dbl> <dbl>     <dbl>     <dbl>
-1 logP_c          0.000901     1     0.665  4.16e- 1
-2 log_foretibia_c 0.224        1   165.     1.42e-30
-3 group           0.0152       3     3.73   1.17e- 2
-4 Residuals       0.416      307    NA     NA       
-# A tibble: 1 × 8
-  `1`     log_foretibia_c.trend     SE    df lower.CL upper.CL t.ratio  p.value
-  <fct>                   <dbl>  <dbl> <dbl>    <dbl>    <dbl>   <dbl>    <dbl>
-1 overall                 0.795 0.0618   307    0.673    0.917    12.9 1.42e-30
+EAR INVESTMENT RELATIVE TO BODY SIZE
+# A tibble: 1 × 9
+  analysis                                  reduced_residual_df full_residual_df numerator_df reduced_RSS full_RSS sum_of_squares     F p_value
+  <chr>                                                   <dbl>            <dbl>        <dbl>       <dbl>    <dbl>          <dbl> <dbl>   <dbl>
+1 Ear relative to body size: logP_c x group                 308              305            3       0.640    0.639        0.00157 0.249   0.862
+# A tibble: 4 × 8
+  group  logP_c.trend     SE    df lower.CL upper.CL t.ratio  p.value
+  <fct>         <dbl>  <dbl> <dbl>    <dbl>    <dbl>   <dbl>    <dbl>
+1 female        0.514 0.0798   305   0.357     0.671    6.45 4.50e-10
+2 eighth        0.547 0.0909   305   0.368     0.726    6.02 5.04e- 9
+3 ninth         0.593 0.112    305   0.373     0.813    5.30 2.21e- 7
+4 tenth         0.418 0.185    305   0.0536    0.783    2.26 2.47e- 2
 # A tibble: 4 × 14
-  group  emmean      SE    df lower.CL upper.CL t.ratio   p.value predicted_ear_linear ear_linear_lower ear_linear_upper predicted_ear_area ear_area_lower ear_area_upper
-  <fct>   <dbl>   <dbl> <dbl>    <dbl>    <dbl>   <dbl>     <dbl>                <dbl>            <dbl>            <dbl>              <dbl>          <dbl>          <dbl>
-1 female  0.555 0.00548   307    0.544    0.565   101.  5.96e-238                 1.74             1.72             1.76               3.03           2.97           3.10
-2 eighth  0.529 0.00660   307    0.516    0.542    80.2 6.13e-208                 1.70             1.68             1.72               2.88           2.81           2.96
-3 ninth   0.525 0.00538   307    0.515    0.536    97.5 4.55e-233                 1.69             1.67             1.71               2.86           2.80           2.92
-4 tenth   0.525 0.00801   307    0.510    0.541    65.6 1.06e-182                 1.69             1.66             1.72               2.86           2.77           2.95
+  group  emmean      SE    df lower.CL upper.CL t.ratio   p.value predicted_ear_linear ear_linear_lower ear_linear_upper predicted_ear_area
+  <fct>   <dbl>   <dbl> <dbl>    <dbl>    <dbl>   <dbl>     <dbl>                <dbl>            <dbl>            <dbl>              <dbl>
+1 female  0.520 0.00765   305    0.505    0.535    68.0 2.51e-186                 1.68             1.66             1.71               2.83
+2 eighth  0.524 0.0124    305    0.500    0.549    42.1 3.73e-129                 1.69             1.65             1.73               2.85
+3 ninth   0.567 0.00673   305    0.553    0.580    84.2 3.72e-213                 1.76             1.74             1.79               3.11
+4 tenth   0.595 0.0109    305    0.574    0.617    54.6 2.12e-159                 1.81             1.77             1.85               3.29
+# ℹ 2 more variables: ear_area_lower <dbl>, ear_area_upper <dbl>
 # A tibble: 3 × 15
-  contrast        estimate      SE    df lower.CL upper.CL t.ratio p.value outcome             ratio ratio_lower ratio_upper percent_difference area_ratio area_percent_difference
-  <chr>              <dbl>   <dbl> <dbl>    <dbl>    <dbl>   <dbl>   <dbl> <chr>               <dbl>       <dbl>       <dbl>              <dbl>      <dbl>                   <dbl>
-1 eighth - female  -0.0256 0.0102    307  -0.0502 -0.00105   -2.51 0.0126  Linearized ear size 0.975       0.951       0.999              -2.53      0.950                   -4.99
-2 ninth - female   -0.0295 0.00929   307  -0.0519 -0.00712   -3.17 0.00499 Linearized ear size 0.971       0.949       0.993              -2.91      0.943                   -5.73
-3 tenth - female   -0.0292 0.0105    307  -0.0545 -0.00387   -2.78 0.0117  Linearized ear size 0.971       0.947       0.996              -2.88      0.943                   -5.67
+  contrast            estimate     SE    df lower.CL upper.CL t.ratio p.value outcome ratio ratio_lower ratio_upper percent_difference area_ratio
+  <chr>                  <dbl>  <dbl> <dbl>    <dbl>    <dbl>   <dbl>   <dbl> <chr>   <dbl>       <dbl>       <dbl>              <dbl>      <dbl>
+1 eighth - tenth      -0.0708  0.0165   305  -0.111   -0.0310  -4.28  4.99e-5 Linear… 0.932       0.895       0.969             -6.84       0.868
+2 ninth - midpoint(e…  0.00698 0.0107   305  -0.0187   0.0327   0.654 5.14e-1 Linear… 1.01        0.981       1.03               0.700      1.01 
+3 tenth - female       0.0748  0.0133   305   0.0427   0.107    5.62  1.32e-7 Linear… 1.08        1.04        1.11               7.77       1.16 
+# ℹ 1 more variable: area_percent_difference <dbl>
 
-EYE MODEL TESTS
-# A tibble: 2 × 9
-  analysis               reduced_residual_df full_residual_df numerator_df reduced_RSS full_RSS sum_of_squares     F p_value
-  <chr>                                <dbl>            <dbl>        <dbl>       <dbl>    <dbl>          <dbl> <dbl>   <dbl>
-1 Eye: group x head size                 304              301            3       0.660    0.648        0.0127   1.97   0.118
-2 Eye: group x pronotum                  307              304            3       0.667    0.660        0.00671  1.03   0.380
-# A tibble: 4 × 5
-  term            `Sum Sq`    Df `F value`  `Pr(>F)`
-  <chr>              <dbl> <dbl>     <dbl>     <dbl>
-1 logP_c           0.00453     1      2.08  1.50e- 1
-2 log_head_size_c  0.245       1    113.    1.12e-22
-3 group            0.0694      3     10.6   1.12e- 6
-4 Residuals        0.667     307     NA    NA       
-# A tibble: 1 × 8
-  `1`     log_head_size_c.trend     SE    df lower.CL upper.CL t.ratio  p.value
-  <fct>                   <dbl>  <dbl> <dbl>    <dbl>    <dbl>   <dbl>    <dbl>
-1 overall                 0.575 0.0541   307    0.469    0.682    10.6 1.12e-22
+EAR-FORETIBIA LOCAL INTEGRATION
+# A tibble: 1 × 9
+  analysis                                    reduced_residual_df full_residual_df numerator_df reduced_RSS full_RSS sum_of_squares     F p_value
+  <chr>                                                     <dbl>            <dbl>        <dbl>       <dbl>    <dbl>          <dbl> <dbl>   <dbl>
+1 Ear integration: group x relative foretibia                 304              301            3       0.413    0.407        0.00541  1.33   0.264
+# A tibble: 4 × 8
+  group  relative_foretibia_size.trend    SE    df lower.CL upper.CL t.ratio  p.value
+  <fct>                          <dbl> <dbl> <dbl>    <dbl>    <dbl>   <dbl>    <dbl>
+1 female                         0.803 0.106   301    0.595    1.01     7.60 3.87e-13
+2 eighth                         0.635 0.118   301    0.403    0.867    5.39 1.45e- 7
+3 ninth                          0.898 0.116   301    0.670    1.13     7.75 1.39e-13
+4 tenth                          1.04  0.212   301    0.627    1.46     4.93 1.38e- 6
+# A tibble: 3 × 8
+  contrast                       estimate    SE    df lower.CL upper.CL t.ratio p.value
+  <chr>                             <dbl> <dbl> <dbl>    <dbl>    <dbl>   <dbl>   <dbl>
+1 eighth - tenth                  -0.408  0.242   301   -0.992    0.175  -1.69    0.279
+2 ninth - midpoint(eighth,tenth)   0.0589 0.168   301   -0.345    0.462   0.352   0.725
+3 tenth - female                   0.240  0.237   301   -0.329    0.810   1.02    0.621
+
+EYE INVESTMENT RELATIVE TO BODY SIZE
+# A tibble: 1 × 9
+  analysis                                  reduced_residual_df full_residual_df numerator_df reduced_RSS full_RSS sum_of_squares     F p_value
+  <chr>                                                   <dbl>            <dbl>        <dbl>       <dbl>    <dbl>          <dbl> <dbl>   <dbl>
+1 Eye relative to body size: logP_c x group                 308              305            3       0.912    0.907        0.00562 0.630   0.596
+# A tibble: 4 × 8
+  group  logP_c.trend     SE    df lower.CL upper.CL t.ratio  p.value
+  <fct>         <dbl>  <dbl> <dbl>    <dbl>    <dbl>   <dbl>    <dbl>
+1 female        0.733 0.0951   305   0.546     0.920    7.71 1.83e-13
+2 eighth        0.654 0.108    305   0.440     0.867    6.03 4.67e- 9
+3 ninth         0.580 0.133    305   0.318     0.842    4.35 1.83e- 5
+4 tenth         0.445 0.221    305   0.0103    0.879    2.01 4.49e- 2
 # A tibble: 4 × 11
   group  emmean      SE    df lower.CL upper.CL t.ratio   p.value predicted_eye_length eye_lower eye_upper
   <fct>   <dbl>   <dbl> <dbl>    <dbl>    <dbl>   <dbl>     <dbl>                <dbl>     <dbl>     <dbl>
-1 female  1.07  0.0167    307    1.04     1.10     64.3 4.19e-180                 2.92      2.83      3.02
-2 eighth  0.958 0.00906   307    0.940    0.976   106.  1.67e-243                 2.61      2.56      2.65
-3 ninth   0.928 0.0134    307    0.901    0.954    69.3 1.92e-189                 2.53      2.46      2.60
-4 tenth   0.938 0.0197    307    0.899    0.977    47.6 8.01e-144                 2.56      2.46      2.66
+1 female  0.900 0.00912   305    0.882    0.918    98.7 1.56e-233                 2.46      2.42      2.50
+2 eighth  0.996 0.0148    305    0.966    1.02     67.1 9.26e-185                 2.71      2.63      2.79
+3 ninth   1.05  0.00802   305    1.04     1.07    131.  1.58e-270                 2.87      2.82      2.91
+4 tenth   1.14  0.0130    305    1.11     1.16     87.7 2.45e-218                 3.12      3.04      3.20
 # A tibble: 3 × 13
-  contrast        estimate     SE    df lower.CL upper.CL t.ratio    p.value outcome    ratio ratio_lower ratio_upper percent_difference
-  <chr>              <dbl>  <dbl> <dbl>    <dbl>    <dbl>   <dbl>      <dbl> <chr>      <dbl>       <dbl>       <dbl>              <dbl>
-1 eighth - female   -0.114 0.0229   307   -0.169  -0.0588   -4.97 0.00000327 Eye length 0.892       0.844       0.943              -10.8
-2 ninth - female    -0.144 0.0292   307   -0.214  -0.0738   -4.94 0.00000327 Eye length 0.866       0.807       0.929              -13.4
-3 tenth - female    -0.134 0.0348   307   -0.217  -0.0498   -3.84 0.000149   Eye length 0.875       0.805       0.951              -12.5
+  contrast                      estimate     SE    df lower.CL upper.CL t.ratio  p.value outcome ratio ratio_lower ratio_upper percent_difference
+  <chr>                            <dbl>  <dbl> <dbl>    <dbl>    <dbl>   <dbl>    <dbl> <chr>   <dbl>       <dbl>       <dbl>              <dbl>
+1 eighth - tenth                 -0.144  0.0197   305  -0.191   -0.0961   -7.28 5.70e-12 Eye le… 0.866       0.826       0.908             -13.4 
+2 ninth - midpoint(eighth,tent…  -0.0134 0.0127   305  -0.0440   0.0172   -1.05 2.93e- 1 Eye le… 0.987       0.957       1.02               -1.33
+3 tenth - female                  0.239  0.0159   305   0.201    0.277    15.1  3.01e-38 Eye le… 1.27        1.22        1.32               27.0 
+
+EYE-HEAD LOCAL INTEGRATION / TRADE-OFF
+# A tibble: 1 × 9
+  analysis                                    reduced_residual_df full_residual_df numerator_df reduced_RSS full_RSS sum_of_squares     F p_value
+  <chr>                                                     <dbl>            <dbl>        <dbl>       <dbl>    <dbl>          <dbl> <dbl>   <dbl>
+1 Eye integration: group x relative head size                 304              301            3       0.660    0.648         0.0127  1.97   0.118
+# A tibble: 4 × 8
+  group  relative_head_size.trend     SE    df lower.CL upper.CL t.ratio  p.value
+  <fct>                     <dbl>  <dbl> <dbl>    <dbl>    <dbl>   <dbl>    <dbl>
+1 female                    0.402 0.115    301    0.175    0.630    3.48 5.67e- 4
+2 eighth                    0.682 0.0936   301    0.498    0.866    7.29 2.74e-12
+3 ninth                     0.563 0.0896   301    0.386    0.739    6.28 1.18e- 9
+4 tenth                     0.944 0.238    301    0.477    1.41     3.97 8.83e- 5
+# A tibble: 3 × 8
+  contrast                       estimate    SE    df lower.CL upper.CL t.ratio p.value
+  <chr>                             <dbl> <dbl> <dbl>    <dbl>    <dbl>   <dbl>   <dbl>
+1 eighth - tenth                   -0.262 0.255   301  -0.877     0.353   -1.03   0.306
+2 ninth - midpoint(eighth,tenth)   -0.250 0.156   301  -0.626     0.125   -1.61   0.219
+3 tenth - female                    0.542 0.264   301  -0.0941    1.18     2.05   0.123
+
+DIRECT WEAPON-EAR COVARIANCE
+# A tibble: 1 × 9
+  analysis                                    reduced_residual_df full_residual_df numerator_df reduced_RSS full_RSS sum_of_squares     F p_value
+  <chr>                                                     <dbl>            <dbl>        <dbl>       <dbl>    <dbl>          <dbl> <dbl>   <dbl>
+1 Ear-weapon covariance: group x relative he…                 304              301            3       0.607    0.599        0.00801  1.34   0.261
+# A tibble: 4 × 8
+  group  relative_head_size.trend     SE    df lower.CL upper.CL t.ratio  p.value
+  <fct>                     <dbl>  <dbl> <dbl>    <dbl>    <dbl>   <dbl>    <dbl>
+1 female                    0.397 0.111    301  0.178      0.615    3.57 0.000414
+2 eighth                    0.167 0.0900   301 -0.00999    0.344    1.86 0.0643  
+3 ninth                     0.130 0.0862   301 -0.0392     0.300    1.51 0.131   
+4 tenth                     0.291 0.228    301 -0.159      0.740    1.27 0.204   
+# A tibble: 3 × 8
+  contrast                       estimate    SE    df lower.CL upper.CL t.ratio p.value
+  <chr>                             <dbl> <dbl> <dbl>    <dbl>    <dbl>   <dbl>   <dbl>
+1 eighth - tenth                  -0.124  0.246   301   -0.715    0.468  -0.503       1
+2 ninth - midpoint(eighth,tenth)  -0.0985 0.150   301   -0.460    0.263  -0.657       1
+3 tenth - female                  -0.106  0.254   301   -0.717    0.506  -0.417       1

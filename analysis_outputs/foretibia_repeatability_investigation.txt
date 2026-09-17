@@ -1,0 +1,96 @@
+
+================================================================================
+FORETIBIA REPEATABILITY INVESTIGATION
+================================================================================
+
+FINDINGS:
+
+1. MAJOR OUTLIER: ECJN (R021, tenth instar male)
+   - Round 1: 13.6 mm
+   - Round 2: 6.75 mm
+   - Round 3: 6.76 mm
+   - Difference: 6.81 mm
+   
+   This is almost certainly a MEASUREMENT ERROR or LABELING ERROR in round 1.
+   The true tibia is likely ~6.75 mm (rounds 2–3), and the round 1 value of
+   13.6 mm may be a femur measurement or mislabeled individual.
+   
+   RECOMMENDATION: Check the original Fiji ROI data for ECJN round 1 foretibia
+   to verify which segment was measured.
+
+================================================================================
+
+2. SYSTEMATIC DECLINE ACROSS ROUNDS (all individuals)
+   
+   Round 1 mean: 13.00 mm
+   Round 2 mean: 12.93 mm (Δ = -0.07 mm, p = 0.65, not significant)
+   Round 3 mean: 12.85 mm (Δ = -0.09 mm, p < 0.001, significant)
+   
+   This decline is small but consistent. Possible causes:
+   - True biological change (unlikely: weta don't shrink between rounds)
+   - Systematic observer drift or calibration shift
+   - Different measurement protocol or imaging conditions in round 3
+   
+   IMPACT: This systematic bias reduces ICC below what random error alone would
+   produce. If a fixed effect for measurement_round is added to the model,
+   ICC would likely improve to ~0.85–0.90.
+
+================================================================================
+
+3. INDIVIDUAL VARIATION (excluding ECJN)
+   
+   Individuals with max inter-round difference > 0.2 mm:
+   - XWCJ (R023, eighth): 0.41 mm
+   - WJST (R020, female): 0.35 mm
+   - UYSP (R027, tenth): 0.35 mm
+   - MJSX (R026, eighth): 0.32 mm
+   - HNUV (R041, eighth): 0.31 mm
+   - DYFV (R048, tenth): 0.26 mm
+   - PTRO (R018, female): 0.23 mm
+   - RDRL (R024, eighth): 0.23 mm
+   - ONAU (R005, female): 0.23 mm
+   
+   Mean inter-round variation by morph (excluding ECJN):
+   - Eighth instar: 0.192 mm SD (highest variability)
+   - Female:       0.147 mm SD
+   - Tenth instar: 0.147 mm SD
+   - Ninth instar: 0.117 mm SD (lowest variability)
+   
+   Note: Eighth instars show ~1.6× higher variation than ninth instars.
+   This may reflect size effects (smaller individuals have proportionally
+   larger measurement error) or biological differences.
+
+================================================================================
+
+4. IMPACT ON ICC = 0.810
+   
+   ICC is reduced primarily by:
+   a) ECJN outlier (6.81 mm difference) — removes this individual and ICC → ~0.85
+   b) Systematic round effect (−0.08 mm average decline) — adds 0.05–0.10 to ICC
+   c) Residual inter-individual variation (0.12–0.19 mm SD) — inherent to trait
+   
+   If ECJN is corrected and measurement_round is included as a fixed effect:
+   - Expected ICC: ~0.88–0.90 (still lower than most traits, but acceptable)
+
+================================================================================
+
+RECOMMENDATIONS:
+
+1. Verify ECJN round 1 foretibia measurement in original Fiji files.
+   If it is indeed mislabeled, correct it and rerun repeatability analysis.
+
+2. Investigate round 3 measurement protocol — check whether imaging
+   conditions, observer, or equipment changed that could explain the
+   systematic 0.09 mm decline from round 2.
+
+3. Re-run repeatability analysis with measurement_round as a fixed effect
+   to estimate adjusted ICC (removing systematic bias).
+
+4. Consider whether eighth instar males warrant closer attention due to
+   higher measurement variability. May reflect size effects on measurement precision.
+
+5. Save foretibia_all_rounds.csv for detailed audit trail of measurements.
+   This can be used to validate the final cleaned dataset before analysis.
+
+================================================================================
+

@@ -7,3 +7,7 @@
 data/raw/*
 !data/raw/measurements/
 .posit/assistant
+.positai
+
+/.quarto/
+**/*.quarto_ipynb
