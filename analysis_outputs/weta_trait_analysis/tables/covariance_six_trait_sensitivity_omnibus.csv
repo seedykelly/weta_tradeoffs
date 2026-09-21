@@ -1,0 +1,3 @@
+matrix_type,statistic,permutations,p_value,trait_set,analysis_role
+covariance,325.20760679654006,9999,0.0416,six_traits_including_head,sensitivity_omnibus
+correlation,0.8251794615260094,9999,0.5808,six_traits_including_head,sensitivity_omnibus
