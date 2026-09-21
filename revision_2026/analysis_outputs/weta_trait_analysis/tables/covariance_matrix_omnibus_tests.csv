@@ -1,0 +1,3 @@
+matrix_type,statistic,permutations,p_value,trait_set,analysis_role
+covariance,116.44625162710192,9999,0.3979,five_non_head_traits,primary_omnibus
+correlation,0.36035082931566065,9999,0.8475,five_non_head_traits,primary_omnibus
