@@ -26,7 +26,7 @@ execute:
   warning: false
   message: false
 params:
-  computer: "home"  # use "work" or "home"
+  computer: "work"  # use "work" or "home"
 ---
 
 ```{=html}
@@ -1059,7 +1059,7 @@ Model assumptions were evaluated using graphical checks of residual normality, h
 
 ## Measurement repeatability
 
-Repeatability was high for all 11 traits. Pooled estimates ranged from $R = `r fmt_num(primary_low$R, 3)`$ for`r unname(trait_labels\[primary_low$trait])` (95% CI `r fmt_num(primary_low$CI_lower, 3)`--`r fmt_num(primary_low\$CI_upper, 3)`) to $R =`r fmt_num(primary_high$R, 4)`$ for `r unname(trait_labels[primary_high$trait])` (95% CI `r fmt_num(primary_high$CI_lower, 4)`--`r fmt_num(primary_high$CI_upper, 4)`). Estimates remained high after morph was included as a fixed effect ($R = `r fmt_num(min(repeatability_morph_adjusted$R), 3)`$--$`r fmt_num(max(repeatability_morph_adjusted$R), 3)`$); `r unname(trait_labels[morph_low$trait])` again had the lowest estimate ($R = `r fmt_num(morph_low$R, 3)`$, 95% CI`r fmt_num(morph_low$CI_lower, 3)`--`r fmt_num(morph_low$CI_upper, 3)\`). The high pooled estimates therefore did not depend only on the large mean differences among females and the three male morphs.
+Repeatability was high for all 11 traits. Pooled estimates ranged from $R = `r fmt_num(primary_low$R, 3)`$ for `r unname(trait_labels[primary_low$trait])` (95% CI `r fmt_num(primary_low$CI_lower, 3)`--`r fmt_num(primary_low$CI_upper, 3)`) to $R = `r fmt_num(primary_high$R, 4)`$ for `r unname(trait_labels[primary_high$trait])` (95% CI `r fmt_num(primary_high$CI_lower, 4)`--`r fmt_num(primary_high$CI_upper, 4)`). Estimates remained high after morph was included as a fixed effect ($R = `r fmt_num(min(repeatability_morph_adjusted$R), 3)`$--$`r fmt_num(max(repeatability_morph_adjusted$R), 3)`$); `r unname(trait_labels[morph_low$trait])` again had the lowest estimate ($R = `r fmt_num(morph_low$R, 3)`$, 95% CI `r fmt_num(morph_low$CI_lower, 3)`--`r fmt_num(morph_low$CI_upper, 3)`). The high pooled estimates therefore did not depend only on the large mean differences among females and the three male morphs.
 
 A measurement-round effect remained supported after Holm adjustment for `r nrow(round_supported)` traits: `r round_supported_text` (all Holm-adjusted $p \leq `r fmt_num(round_max_Holm_P, 3)`$). The shifts were small in magnitude. Overall relative technical error ranged from `r fmt_num(round_relative_TEM_min, 2)`% to `r fmt_num(round_relative_TEM_max, 2)`%, and absolute-agreement ICC(A,1) values ranged from `r fmt_num(round_ICC_min, 4)` to `r fmt_num(round_ICC_max, 4)`. The largest pairwise bias was `r fmt_num(max_pairwise_bias_percent, 3)`% for ear area; the maximum absolute bias for every other trait was no greater than `r fmt_num(max_non_ear_bias_percent, 3)`%. Randomized measurement position was unrelated to either signed error (minimum Benjamini--Hochberg-adjusted $p = `r fmt_num(min_signed_order_q, 3)`$) or absolute error (minimum adjusted $p = `r fmt_num(min_absolute_order_q, 3)`$). Thus, several traits showed slight session-specific shifts, but measurement error was small and absolute agreement remained high across rounds.
 
