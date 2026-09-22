@@ -86,6 +86,7 @@ figures_dir <- file.path(output_dir, "figures")
 models_dir  <- file.path(output_dir, "models")
 
 required_files <- c(
+  file.path(project_dir, "figure_1.jpg"),
   file.path(tables_dir, "group_descriptive_statistics.csv"),
   file.path(tables_dir, "common_body_size_range.csv"),
   file.path(tables_dir, "joint_leg_model_type3_anova.csv"),
@@ -649,14 +650,11 @@ Adult males were assigned to eighth-, ninth- or tenth-instar morphotypes from th
 
 Following collection, individuals were euthanized by freezing at $-20\,^{\circ}\mathrm{C}$. Each specimen was subsequently dissected to remove the head, pronotum, both forelegs, both midlegs and both hindlegs. All structures dissected from an individual were placed together in a labelled screw-cap tube to preserve their association with the individual's unique identifier.
 
-<!-- Add collection-permit and institutional animal-care information here,
-if required by the journal. -->
-
 ## Digital imaging and morphological measurements
 
 Specimens were transported to the Université du Québec à Montréal, where each dissected structure was photographed separately using a Canon EOS 5D Mark IV digital camera fitted with a Canon EF 100 mm f/2.8L IS USM Macro lens and Canon MT-26EX-RT macro flashes. The camera was mounted on a copy stand approximately 40 cm above the specimen, with the camera sensor parallel to the imaging surface. Each specimen was photographed with its identifier and a ruler positioned in the same plane. Images were calibrated from the ruler, and a visible 5-mm scale bar was added using ImageJ.
 
-Morphological measurements were obtained from the calibrated images using Fiji [@schindelin2012]. All linear traits were measured using the straight-line tool, with measurement endpoints defined by consistent anatomical landmarks illustrated in Figure 1. Ear area was measured by tracing the perimeter of the tympanal membrane using the freehand selection tool.
+Morphological measurements were obtained from the calibrated images using Fiji [@schindelin2012]. All linear traits were measured using the straight-line tool, with measurement endpoints defined by consistent anatomical landmarks illustrated in @fig-morphological-measurements. Ear area was measured by tracing the perimeter of the tympanal membrane using the freehand selection tool.
 
 The measured linear traits were pronotum length, head length, head width, eye length, and the femur and tibia lengths of the forelegs, midlegs and hindlegs. Left and right structures were measured independently for bilateral traits, and the mean of the two sides was used in the analyses. Total foreleg, midleg and hindleg lengths were calculated as the sum of the corresponding femur and tibia lengths.
 
@@ -1008,11 +1006,7 @@ CDK collected and analysed the data and wrote the manuscript.
 
 # Funding
 
-The study was funded by a Discovery Grant from the Natural Sciences and Engineering Research Council of Canada (NSERC).
-
-# Ethics approval
-
-I thank the Department of Conservation of New Zealand for collection permits.
+This research was funded by the Canada Research Chairs Program.
 
 # Competing interests
 
@@ -1020,7 +1014,7 @@ The author declares no competing interests.
 
 # Acknowledgements
 
-I thank Roxanne Chassé Bilodeau for trait photography.
+I thank Roxanne Chassé Bilodeau for trait photography and acknowledge funding from the Canada Research Chairs Program.
 
 {{< pagebreak >}}
 
@@ -1133,6 +1127,16 @@ eye_body_means_display |>
 {{< pagebreak >}}
 
 # Figures {.unnumbered}
+
+```{r}
+#| label: fig-morphological-measurements
+#| fig-cap: "Morphological landmarks used to measure Wellington tree wētā. (a) Dorsal head view showing head length (HL), head width (HW), and eye length (EL). (b) Dorsal pronotum view showing pronotum length. (c–e) Foreleg, midleg, and hindleg, respectively, showing femur and tibia lengths; panel c also indicates the tympanal membrane, whose area was measured by tracing its perimeter. Orange arrows indicate measurement endpoints. Scale bar = 5 mm."
+#| out-width: "100%"
+
+knitr::include_graphics(file.path(project_dir, "figure_1.jpg"))
+```
+
+{{< pagebreak >}}
 
 ```{r}
 #| label: fig-adjusted-legs
