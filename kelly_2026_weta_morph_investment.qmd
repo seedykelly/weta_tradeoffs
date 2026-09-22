@@ -21,6 +21,7 @@ format:
     toc: false
     number-sections: true
 bibliography: Bibliography.bib
+csl: journal-of-evolutionary-biology.csl
 execute:
   echo: false
   warning: false
