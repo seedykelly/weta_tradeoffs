@@ -136,18 +136,16 @@ range_text <- function(x, digits = 3) {
 
 supplementary_table <- function(x, align = NULL, font_size = 8.5) {
   x <- as.data.frame(x)
-  rule <- officer::fp_border(color = "#7F7F7F", width = 0.75)
-  grid <- officer::fp_border(color = "#D0D0D0", width = 0.4)
+  rule <- officer::fp_border(color = "#000000", width = 0.75)
 
   ft <- flextable::flextable(x) |>
     flextable::font(fontname = "Times New Roman", part = "all") |>
     flextable::fontsize(size = font_size, part = "all") |>
+    flextable::color(color = "#000000", part = "all") |>
     flextable::bold(part = "header") |>
-    flextable::bg(bg = "#D9E2F3", part = "header") |>
     flextable::border_remove() |>
-    flextable::border_outer(border = rule, part = "all") |>
-    flextable::border_inner_h(border = grid, part = "all") |>
-    flextable::border_inner_v(border = grid, part = "all") |>
+    flextable::hline_top(border = rule, part = "header") |>
+    flextable::hline_bottom(border = rule, part = "header") |>
     flextable::padding(padding = 2, part = "all") |>
     flextable::valign(valign = "center", part = "all") |>
     flextable::autofit() |>
@@ -156,15 +154,6 @@ supplementary_table <- function(x, align = NULL, font_size = 8.5) {
       width = 1,
       opts_word = list(split = FALSE, repeat_headers = TRUE)
     )
-
-  if (nrow(x) >= 2) {
-    ft <- flextable::bg(
-      ft,
-      i = seq(2, nrow(x), by = 2),
-      bg = "#F3F6F9",
-      part = "body"
-    )
-  }
 
   if (!is.null(align)) {
     for (j in seq_along(align)) {
@@ -675,7 +664,7 @@ The group-by-leg allocation effect and the raw-head weapon–leg interaction rem
 
 # Supplementary tables
 
-**Supplementary Table S1. Repeatability, agreement and measurement-round diagnostics for 11 morphological traits measured three times.**
+**Table S1**. Repeatability, agreement and measurement-round diagnostics for 11 morphological traits measured three times.
 
 ```{r}
 #| label: table-s1-repeatability
@@ -691,7 +680,7 @@ repeatability_display |>
 
 {{< pagebreak >}}
 
-**Supplementary Table S2. Pairwise descriptions of standardized female-referenced contrast vectors for the five nonclassification traits. D8, D9 and D10 denote the female-referenced eighth-, ninth- and tenth-instar male vectors. Angular tests and confidence intervals are supporting descriptions; the global rank-one test is the primary directional test.**
+**Table S2**. Pairwise descriptions of standardized female-referenced contrast vectors for the five nonclassification traits. D8, D9 and D10 denote the female-referenced eighth-, ninth- and tenth-instar male vectors. Angular tests and confidence intervals are supporting descriptions; the global rank-one test is the primary directional test.
 
 ```{r}
 #| label: table-s2-vectors
@@ -705,7 +694,7 @@ vector_pairwise_display |>
 
 {{< pagebreak >}}
 
-**Supplementary Table S3. Group- and leg-specific partial slopes of log leg length on raw log composite head size, where composite head size is the geometric mean of head length and head width. The one-stage repeated-trait model also contains log pronotum length, group, leg identity and their specified interactions. Individual slope p-values are unadjusted.**
+**Table S3**. Group- and leg-specific partial slopes of log leg length on raw log composite head size, where composite head size is the geometric mean of head length and head width. The one-stage repeated-trait model also contains log pronotum length, group, leg identity and their specified interactions. Individual slope p-values are unadjusted.
 
 ```{r}
 #| label: table-s3-weapon-leg-slopes
@@ -718,7 +707,7 @@ head_leg_slopes_display |>
 
 {{< pagebreak >}}
 
-**Supplementary Table S4. Planned contrasts among weapon–leg slopes. P-values are Holm-adjusted within the three-contrast family for each leg pair.**
+**Table S4**. Planned contrasts among weapon–leg slopes. P-values are Holm-adjusted within the three-contrast family for each leg pair.
 
 ```{r}
 #| label: table-s4-weapon-leg-contrasts
@@ -732,7 +721,7 @@ head_leg_contrasts_display |>
 
 {{< pagebreak >}}
 
-**Supplementary Table S5. Within-group standardized partial slopes of log linearized tympanal size on raw log composite head size, controlling for log pronotum length. Linearized tympanal size is the square root of tympanal area. Equivalence required the complete 90% confidence interval to fall within −0.20 to 0.20; robust slopes are Huber M-estimates.**
+**Table S5**. Within-group standardized partial slopes of log linearized tympanal size on raw log composite head size, controlling for log pronotum length. Linearized tympanal size is the square root of tympanal area. Equivalence required the complete 90% confidence interval to fall within −0.20 to 0.20; robust slopes are Huber M-estimates.
 
 ```{r}
 #| label: table-s5-weapon-ear
@@ -745,7 +734,7 @@ weapon_ear_display |>
 
 {{< pagebreak >}}
 
-**Supplementary Table S6. All pairwise group contrasts in size-adjusted tympanal area and eye length at a pronotum length of 7.2 mm. Ratios greater than one indicate that the first named group had the larger predicted trait. P-values are Holm-adjusted within the six group pairs for each trait.**
+**Table S6**. All pairwise group contrasts in size-adjusted tympanal area and eye length at a pronotum length of 7.2 mm. Ratios greater than one indicate that the first named group had the larger predicted trait. P-values are Holm-adjusted within the six group pairs for each trait.
 
 ```{r}
 #| label: table-s6-sensory
@@ -759,7 +748,7 @@ sensory_pairwise_display |>
 
 {{< pagebreak >}}
 
-**Supplementary Table S7. Sensitivity of dimensionality conclusions to trait definition, scaling and morph-classification uncertainty.**
+**Table S7**. Sensitivity of dimensionality conclusions to trait definition, scaling and morph-classification uncertainty.
 
 ```{r}
 #| label: table-s7-dimensionality
@@ -773,7 +762,7 @@ dimensionality_display |>
 
 {{< pagebreak >}}
 
-**Supplementary Table S8. Omnibus and pairwise permutation comparisons of within-group covariance and correlation matrices. Pairwise p-values are reported with both Benjamini–Hochberg and Holm adjustment across the six group pairs within each matrix type.**
+**Table S8a**. Omnibus permutation comparisons of within-group covariance and correlation matrices.
 
 ```{r}
 #| label: table-s8-matrix-tests
@@ -783,6 +772,8 @@ matrix_omnibus_display |>
     align = c("left", "left", "right", "right", "right")
   )
 ```
+
+**Table S8b**. Pairwise permutation comparisons of within-group covariance and correlation matrices. P-values are reported with both Benjamini–Hochberg and Holm adjustment across the six group pairs within each matrix type.
 
 ```{r}
 #| label: table-s8-matrix-pairwise
@@ -796,7 +787,7 @@ matrix_pairwise_display |>
 
 {{< pagebreak >}}
 
-**Supplementary Table S9. Descriptive matrix similarities and unequal-sample-size rarefaction. Rarefaction used 2,000 subsamples that reduced each group to 38 specimens; intervals are the 2.5th and 97.5th percentiles of the resulting distance distribution.**
+**Table S9**. Descriptive matrix similarities and unequal-sample-size rarefaction. Rarefaction used 2,000 subsamples that reduced each group to 38 specimens; intervals are the 2.5th and 97.5th percentiles of the resulting distance distribution.
 
 ```{r}
 #| label: table-s9-matrix-similarity
@@ -810,7 +801,7 @@ matrix_similarity_display |>
 
 {{< pagebreak >}}
 
-**Supplementary Table S10. Comparison of covariance structures for the repeated-leg model. All models contain the same fixed-effects specification and were fitted by REML.**
+**Table S10a**. Comparison of covariance structures for the repeated-leg model. All models contain the same fixed-effects specification and were fitted by REML.
 
 ```{r}
 #| label: table-s10-leg-covariance-models
@@ -822,7 +813,7 @@ leg_covariance_display |>
   )
 ```
 
-**Estimated parameters from the selected unstructured covariance model.**
+**Table S10b**. Estimated parameters from the selected unstructured covariance model.
 
 ```{r}
 #| label: table-s10-leg-covariance-parameters
@@ -833,7 +824,7 @@ leg_covariance_parameter_display |>
 
 {{< pagebreak >}}
 
-**Supplementary Table S11. Morph-classification, head-adjusted eye and sample-composition sensitivity checks. Observed counts are ordered as eighth / ninth / tenth instar.**
+**Table S11a**. Morph-classification and sample-composition sensitivity checks. Observed counts are ordered as eighth / ninth / tenth instar.
 
 ```{r}
 #| label: table-s11-frequency
@@ -845,7 +836,7 @@ morph_frequency_display |>
   )
 ```
 
-**Head-adjusted eye-length group test under the archived labels and after excluding males whose labels disagree with the published 2010 thresholds.**
+**Table S11b**. Head-adjusted eye-length group test under the archived labels and after excluding males whose labels disagree with the published 2010 thresholds.
 
 ```{r}
 #| label: table-s11-eye-classification
@@ -856,7 +847,7 @@ eye_classification_display |>
   )
 ```
 
-**Head-size and group contributions to eye length when pronotum, composite head size and group are fitted jointly.**
+**Table S11c**. Head-size and group contributions to eye length when pronotum, composite head size and group are fitted jointly.
 
 ```{r}
 #| label: table-s11-eye-head-model
@@ -869,7 +860,7 @@ eye_head_model_display |>
 
 {{< pagebreak >}}
 
-**Observed composite head-size ranges. The reversed common bounds show that the four groups have no shared head-size support.**
+**Table S11d**. Observed composite head-size ranges. The reversed common bounds show that the four groups have no shared head-size support.
 
 ```{r}
 #| label: table-s11-eye-head-support
@@ -883,7 +874,7 @@ eye_head_support_display |>
 
 {{< pagebreak >}}
 
-**Supplementary Table S12. Conservative cross-analysis multiplicity sensitivity for ten focal omnibus tests. This audit does not replace the prespecified families used for planned contrasts.**
+**Table S12**. Conservative cross-analysis multiplicity sensitivity for ten focal omnibus tests. This audit does not replace the prespecified families used for planned contrasts.
 
 ```{r}
 #| label: table-s12-multiplicity
@@ -897,7 +888,7 @@ focal_multiplicity_display |>
 
 {{< pagebreak >}}
 
-**Supplementary Table S13. Sensitivity of ninth-instar midpoint equivalence to ±2.5% and ±5% regions. Equivalence requires the complete 90% confidence interval to fall within the stated region.**
+**Table S13**. Sensitivity of ninth-instar midpoint equivalence to ±2.5% and ±5% regions. Equivalence requires the complete 90% confidence interval to fall within the stated region.
 
 ```{r}
 #| label: table-s13-equivalence
