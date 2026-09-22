@@ -2,41 +2,98 @@
 # WELLINGTON TREE WETA MORPHOLOGICAL ALLOCATION
 # Complete, annotated analysis workflow
 # Females and eighth-, ninth-, and tenth-instar males
+# Display labels: Female, Eighth instar, Ninth instar, Tenth instar
 # ============================================================
 #
 # PRIMARY QUESTIONS
 # 1. Do the four developmental groups differ in foreleg,
 #    midleg, and hindleg length after accounting for body size?
 # 2. Do group differences depend on leg identity (relative
-#    locomotory allocation)?
+#    locomotory allocation), particularly anterior versus
+#    posterior allocation?
 # 3. Do allometric slopes differ among groups and leg pairs?
-# 4. Is ear size integrated with foretibia length, and does that
-#    relationship differ among developmental groups?
-# 5. Is eye size integrated with head size, and does that
-#    relationship differ among developmental groups?
+# 4. Does relative head/weapon size covary with leg size within
+#    groups, as expected under phenotypic integration or compensation?
+# 5. Do groups differ in ear and eye investment at a common
+#    structural body size?
+# 6. Are ear and eye size locally integrated with foretibia and
+#    head size, respectively, after accounting for group-specific
+#    body-size allometry?
+# 7. Is sensory morphology negatively associated with relative
+#    weapon investment (consistent with an observable allocation
+#    trade-off), positively integrated, or phenotypically decoupled?
 #
 # IMPORTANT INTERPRETIVE NOTES
 # - Pronotum length is used as the measure of structural body size.
 # - All continuous morphological variables are analysed on a log
 #   scale. Slopes are therefore allometric exponents.
 # - logP_c = 0 corresponds to a pronotum length of 7.2 mm, which
-#   lies within the observed range of all four groups.
+#   lies within the observed range shared by all four groups.
 # - Back-transformed EMMs are geometric means / predicted medians,
 #   not arithmetic means.
 # - The joint repeated-trait model is the primary analysis of
 #   relative allocation among the three leg pairs.
+# - Morph comparisons of ear and eye size are made at a common
+#   pronotum size. Local ear-tibia and eye-head integration is
+#   tested using body-adjusted within-group residual variation,
+#   avoiding extrapolation to unsupported common tibia/head sizes.
+# - Positive phenotypic covariance is consistent with integration
+#   or compensation; negative covariance is consistent with an
+#   observable allocation trade-off; a slope near zero indicates
+#   phenotypic decoupling. None uniquely identifies mechanism:
+#   variation in resource acquisition can mask allocation costs and
+#   generate positive covariance among costly traits.
 # ============================================================
 
 
 # 0. USER SETTINGS -------------------------------------------
 
-# Directory containing trait_data.csv
-source_dir <- paste0(
-  "/Users/uqam/Documents/Research_Admin/research projects/",
-  "Trait compensation/data/clean"
+# Choose the computer on which the analysis is being run:
+computer <- "home"   # Use either "work" or "home"
+
+source_dir <- switch(
+  computer,
+  
+  work = paste0(
+    "/Users/uqam/Documents/Research_Admin/research projects/",
+    "Trait compensation/data/clean"
+  ),
+  
+  home = paste0(
+    "/Users/kellyclintdale/Library/Mobile Documents/",
+    "com~apple~CloudDocs/Documents/Research_Admin/research projects/",
+    "Trait compensation/data/clean"
+  ),
+  
+  stop(
+    "computer must be set to either 'work' or 'home'.",
+    call. = FALSE
+  )
 )
 
 data_file <- file.path(source_dir, "trait_data.csv")
+
+# Confirm that the selected path exists.
+if (!dir.exists(source_dir)) {
+  stop(
+    paste0(
+      "The selected source directory does not exist:\n",
+      source_dir,
+      "\nCheck the value assigned to computer."
+    ),
+    call. = FALSE
+  )
+}
+
+if (!file.exists(data_file)) {
+  stop(
+    paste0(
+      "trait_data.csv was not found at:\n",
+      data_file
+    ),
+    call. = FALSE
+  )
+}
 
 # Project-level output directory
 project_dir <- dirname(dirname(source_dir))
@@ -76,7 +133,8 @@ required_packages <- c(
   "lmerTest",
   "performance",
   "see",
-  "broom"
+  "broom",
+  "flextable"
 )
 
 missing_packages <- required_packages[
@@ -229,6 +287,58 @@ theme_weta <- function() {
     )
 }
 
+# Lower-case publication labels used whenever sex/morph group is plotted
+# on the x-axis. Model and table labels remain unchanged.
+group_axis_labels <- c(
+  "Female" = "female",
+  "Eighth instar" = "eighth instar",
+  "Ninth instar" = "ninth instar",
+  "Tenth instar" = "tenth instar"
+)
+
+
+# Planned contrasts used repeatedly throughout the analysis.
+# Coefficients correspond to group order:
+# Female, Eighth instar, Ninth instar, Tenth instar.
+strategy_contrasts_full <- list(
+  "Eighth instar - Tenth instar" = c(0, 1, 0, -1),
+  "Ninth instar - midpoint(Eighth instar,Tenth instar)" =
+    c(0, -0.5, 1, -0.5),
+  "Tenth instar - Female" = c(-1, 0, 0, 1)
+)
+
+# Construct a contrast vector across a group-by-leg emmeans grid.
+# Named weights make the code robust to the internal row order.
+make_factorial_contrast <- function(
+    emm_object,
+    group_weights,
+    leg_weights
+) {
+  grid <- as.data.frame(emm_object)
+
+  if (!all(c("group", "leg") %in% names(grid))) {
+    stop(
+      "The emmeans grid must contain columns named 'group' and 'leg'.",
+      call. = FALSE
+    )
+  }
+
+  group_labels <- as.character(grid$group)
+  leg_labels <- as.character(grid$leg)
+
+  if (!all(group_labels %in% names(group_weights))) {
+    stop("group_weights is missing one or more group names.", call. = FALSE)
+  }
+  if (!all(leg_labels %in% names(leg_weights))) {
+    stop("leg_weights is missing one or more leg names.", call. = FALSE)
+  }
+
+  unname(
+    group_weights[group_labels] *
+      leg_weights[leg_labels]
+  )
+}
+
 
 # 3. IMPORT DATA ---------------------------------------------
 
@@ -357,8 +467,18 @@ if (any(nonpositive_summary$n_nonpositive > 0)) {
   )
 }
 
-# Sex-by-morph table is retained as a QC check.
+# Sex-by-morph table is retained as a QC check. Use the same
+# publication-ready morph labels as the manuscript outputs.
 sex_morph_table <- dat_raw |>
+  mutate(
+    morph = recode(
+      morph,
+      female = "Female",
+      eighth = "Eighth instar",
+      ninth = "Ninth instar",
+      tenth = "Tenth instar"
+    )
+  ) |>
   count(sex, morph, name = "n")
 
 cat("\nSEX BY MORPH\n")
@@ -370,16 +490,19 @@ print(sex_morph_table)
 dat <- dat_raw |>
   mutate(
     row_id = row_number(),
+    # Retain the raw morph codes as factor inputs, but use complete,
+    # publication-ready group labels in models, tables, and figures.
     group = factor(
       morph,
-      levels = c("female", "eighth", "ninth", "tenth")
+      levels = c("female", "eighth", "ninth", "tenth"),
+      labels = c("Female", "Eighth instar", "Ninth instar", "Tenth instar")
     ),
 
     # Ordered male instar number for descriptive use only.
     male_morph_ordered = case_when(
-      group == "eighth" ~ 8,
-      group == "ninth"  ~ 9,
-      group == "tenth"  ~ 10,
+      group == "Eighth instar" ~ 8,
+      group == "Ninth instar"  ~ 9,
+      group == "Tenth instar"  ~ 10,
       TRUE               ~ NA_real_
     ),
 
@@ -417,9 +540,20 @@ dat <- dat_raw |>
     log_eye = log(eye),
     log_ear_linear = log(ear_linear)
   ) |>
+  group_by(group) |>
   mutate(
-    # Centre supporting-trait covariates at their sample means.
-    # This makes group EMMs refer to a typical foretibia/head size.
+    # Within-group centring prevents morph differences in absolute
+    # head or foretibia size from being treated as within-group
+    # developmental integration.
+    log_foretibia_within =
+      log_foretibia - mean(log_foretibia, na.rm = TRUE),
+    log_head_size_within =
+      log_head_size - mean(log_head_size, na.rm = TRUE)
+  ) |>
+  ungroup() |>
+  mutate(
+    # Grand-mean-centred variables are retained only for descriptive
+    # checks and compatibility with earlier exploratory models.
     log_foretibia_c = log_foretibia - mean(log_foretibia, na.rm = TRUE),
     log_head_size_c = log_head_size - mean(log_head_size, na.rm = TRUE)
   )
@@ -429,7 +563,11 @@ centering_check <- dat |>
   summarise(
     reference_pronotum = reference_pronotum,
     mean_log_foretibia_c = mean(log_foretibia_c, na.rm = TRUE),
-    mean_log_head_size_c = mean(log_head_size_c, na.rm = TRUE)
+    mean_log_head_size_c = mean(log_head_size_c, na.rm = TRUE),
+    maximum_absolute_group_mean_foretibia_within =
+      max(abs(tapply(log_foretibia_within, group, mean, na.rm = TRUE))),
+    maximum_absolute_group_mean_head_within =
+      max(abs(tapply(log_head_size_within, group, mean, na.rm = TRUE)))
   )
 
 
@@ -515,11 +653,146 @@ p_body <- ggplot(dat, aes(x = pronotum, fill = group)) +
   theme_weta()
 
 
+
+# 7A. SUPPORTING-TRAIT RANGES --------------------------------
+# Pronotum overlaps among all groups, whereas head size and
+# foretibia length do not. These tables document why sensory-group
+# comparisons use common body size rather than a common absolute
+# head or foretibia size.
+
+supporting_trait_ranges <- dat |>
+  group_by(group) |>
+  summarise(
+    pronotum_min = min(pronotum, na.rm = TRUE),
+    pronotum_max = max(pronotum, na.rm = TRUE),
+    head_size_min = min(head_size, na.rm = TRUE),
+    head_size_max = max(head_size, na.rm = TRUE),
+    foretibia_min = min(foretibia, na.rm = TRUE),
+    foretibia_max = max(foretibia, na.rm = TRUE),
+    .groups = "drop"
+  )
+
+common_support_ranges <- tibble(
+  trait = c("pronotum", "head_size", "foretibia"),
+  common_lower = c(
+    max(supporting_trait_ranges$pronotum_min),
+    max(supporting_trait_ranges$head_size_min),
+    max(supporting_trait_ranges$foretibia_min)
+  ),
+  common_upper = c(
+    min(supporting_trait_ranges$pronotum_max),
+    min(supporting_trait_ranges$head_size_max),
+    min(supporting_trait_ranges$foretibia_max)
+  )
+) |>
+  mutate(
+    has_common_overlap = common_lower <= common_upper
+  )
+
+cat("\nSUPPORTING-TRAIT RANGES\n")
+print(supporting_trait_ranges)
+print(common_support_ranges)
+
+
+# 7B. BODY-ADJUSTED RELATIVE TRAIT INDICES -------------------
+# Relative head size and relative foretibia size are residuals from
+# group-specific allometries. They therefore quantify whether an
+# individual has a larger or smaller head/foretibia than expected
+# for its pronotum size and group. These variables are used for
+# tests of phenotypic integration and patterns consistent with
+# compensation, allocation trade-offs, or decoupling. They do not
+# directly partition resource acquisition from resource allocation.
+
+mod_head_allometry_common <- lm(
+  log_head_size ~ logP_c + group,
+  data = dat,
+  na.action = na.exclude
+)
+
+mod_head_allometry_full <- lm(
+  log_head_size ~ logP_c * group,
+  data = dat,
+  na.action = na.exclude
+)
+
+mod_foretibia_allometry_common <- lm(
+  log_foretibia ~ logP_c + group,
+  data = dat,
+  na.action = na.exclude
+)
+
+mod_foretibia_allometry_full <- lm(
+  log_foretibia ~ logP_c * group,
+  data = dat,
+  na.action = na.exclude
+)
+
+relative_trait_model_tests <- bind_rows(
+  nested_f_test(
+    mod_head_allometry_common,
+    mod_head_allometry_full,
+    "Head size: logP_c x group"
+  ),
+  nested_f_test(
+    mod_foretibia_allometry_common,
+    mod_foretibia_allometry_full,
+    "Foretibia: logP_c x group"
+  )
+)
+
+head_allometry_trends <- emtrends(
+  mod_head_allometry_full,
+  ~ group,
+  var = "logP_c"
+)
+
+foretibia_allometry_trends <- emtrends(
+  mod_foretibia_allometry_full,
+  ~ group,
+  var = "logP_c"
+)
+
+relative_trait_allometric_slopes <- bind_rows(
+  tidy_emm(head_allometry_trends) |>
+    mutate(trait = "Head size"),
+  tidy_emm(foretibia_allometry_trends) |>
+    mutate(trait = "Foretibia")
+) |>
+  relocate(trait)
+
+dat <- dat |>
+  mutate(
+    relative_head_size =
+      as.numeric(residuals(mod_head_allometry_full)),
+    relative_foretibia_size =
+      as.numeric(residuals(mod_foretibia_allometry_full))
+  )
+
+relative_size_check <- dat |>
+  group_by(group) |>
+  summarise(
+    mean_relative_head_size =
+      mean(relative_head_size, na.rm = TRUE),
+    mean_relative_foretibia_size =
+      mean(relative_foretibia_size, na.rm = TRUE),
+    sd_relative_head_size =
+      sd(relative_head_size, na.rm = TRUE),
+    sd_relative_foretibia_size =
+      sd(relative_foretibia_size, na.rm = TRUE),
+    .groups = "drop"
+  )
+
+cat("\nRELATIVE-TRAIT ALLOMETRY TESTS\n")
+print(relative_trait_model_tests)
+print(relative_size_check)
+
+
 # 8. LEG DATA IN LONG FORMAT ---------------------------------
 
 legs_long <- dat |>
   select(
     row_id, ID, group, pronotum, logP_c,
+    relative_head_size,
     foreleg, midleg, hindleg
   ) |>
   pivot_longer(
@@ -802,6 +1075,229 @@ p_adjusted_legs <- ggplot(
       " mm"
     )
   ) +
+  scale_x_discrete(labels = group_axis_labels) +
+  theme_weta()
+
+# Planned strategy contrasts within each leg pair.
+leg_strategy_contrasts_object <- contrast(
+  emm_allocation,
+  method = strategy_contrasts_full,
+  by = "leg",
+  adjust = "holm"
+)
+
+leg_strategy_contrasts <- ratio_contrast_table(
+  leg_strategy_contrasts_object,
+  outcome = "Leg length",
+  adjust = "holm"
+)
+
+# Explicit anterior-versus-posterior allocation contrasts.
+# A difference-in-differences compares group differences in the
+# ratio of anterior leg size to hindleg size. Back-transformation
+# yields a ratio of ratios.
+
+emm_allocation_grid <- emmeans(
+  mod_leg_allocation,
+  ~ group * leg,
+  at = list(logP_c = 0)
+)
+
+group_weight_sets <- list(
+  "Tenth instar - Eighth instar" =
+    c(
+      "Female" = 0, "Eighth instar" = -1,
+      "Ninth instar" = 0, "Tenth instar" = 1
+    ),
+  "Ninth instar - midpoint(Eighth instar,Tenth instar)" =
+    c(
+      "Female" = 0, "Eighth instar" = -0.5,
+      "Ninth instar" = 1, "Tenth instar" = -0.5
+    ),
+  "Tenth instar - Female" =
+    c(
+      "Female" = -1, "Eighth instar" = 0,
+      "Ninth instar" = 0, "Tenth instar" = 1
+    )
+)
+
+leg_weight_sets <- list(
+  "foreleg relative to hindleg" =
+    c(Foreleg = 1, Midleg = 0, Hindleg = -1),
+  "midleg relative to hindleg" =
+    c(Foreleg = 0, Midleg = 1, Hindleg = -1),
+  "anterior mean relative to hindleg" =
+    c(Foreleg = 0.5, Midleg = 0.5, Hindleg = -1)
+)
+
+allocation_difference_methods <- list()
+
+for (group_contrast_name in names(group_weight_sets)) {
+  for (leg_contrast_name in names(leg_weight_sets)) {
+    contrast_name <- paste(
+      group_contrast_name,
+      leg_contrast_name,
+      sep = ": "
+    )
+
+    allocation_difference_methods[[contrast_name]] <-
+      make_factorial_contrast(
+        emm_allocation_grid,
+        group_weights =
+          group_weight_sets[[group_contrast_name]],
+        leg_weights =
+          leg_weight_sets[[leg_contrast_name]]
+      )
+  }
+}
+
+allocation_difference_object <- contrast(
+  emm_allocation_grid,
+  method = allocation_difference_methods,
+  adjust = "holm"
+)
+
+allocation_difference_contrasts <- ratio_contrast_table(
+  allocation_difference_object,
+  outcome = "Anterior-posterior allocation",
+  adjust = "holm"
+) |>
+  rename(
+    ratio_of_ratios = ratio,
+    ratio_of_ratios_lower = ratio_lower,
+    ratio_of_ratios_upper = ratio_upper
+  )
+
+# Within-group anterior-to-hindleg ratios are retained for
+# description. The among-group difference-in-differences above is
+# the more direct test of morph-specific allocation.
+allocation_within_group_methods <- list()
+
+for (group_name in levels(dat$group)) {
+  group_indicator <- setNames(
+    rep(0, length(levels(dat$group))),
+    levels(dat$group)
+  )
+  group_indicator[group_name] <- 1
+
+  allocation_within_group_methods[[
+    paste0(group_name, ": anterior mean - hindleg")
+  ]] <- make_factorial_contrast(
+    emm_allocation_grid,
+    group_weights = group_indicator,
+    leg_weights =
+      c(Foreleg = 0.5, Midleg = 0.5, Hindleg = -1)
+  )
+}
+
+allocation_within_group_object <- contrast(
+  emm_allocation_grid,
+  method = allocation_within_group_methods,
+  adjust = "holm"
+)
+
+allocation_within_group_contrasts <- ratio_contrast_table(
+  allocation_within_group_object,
+  outcome = "Within-group anterior-hindleg allocation",
+  adjust = "holm"
+)
+
+
+# 10B. HEAD-LEG PHENOTYPIC INTEGRATION -----------------------
+# Tomkins-style secondary sexual trait compensation predicts that
+# individuals with relatively large heads/weapons should also have
+# relatively large supporting legs, particularly anterior legs and
+# especially in the weapon-specialized tenth-instar morph. A positive
+# slope is consistent with that prediction but is not uniquely
+# diagnostic of compensation because shared regulation or variation
+# in resource acquisition can also generate positive covariance.
+
+mod_head_leg_compensation <- lmerTest::lmer(
+  log_leg_length ~
+    logP_c * group * leg +
+    relative_head_size * group * leg +
+    (1 | ID),
+  data = legs_long,
+  REML = FALSE,
+  na.action = na.omit
+)
+
+head_leg_compensation_anova <- anova(
+  mod_head_leg_compensation,
+  type = 3,
+  ddf = "Satterthwaite"
+) |>
+  as.data.frame() |>
+  tibble::rownames_to_column("term") |>
+  tibble::as_tibble()
+
+head_leg_trends <- emtrends(
+  mod_head_leg_compensation,
+  ~ group * leg,
+  var = "relative_head_size"
+)
+
+head_leg_trends_table <- tidy_emm(head_leg_trends)
+
+# Do head-leg integration slopes differ among groups within a leg?
+head_leg_group_slope_pairs <- pairs(
+  head_leg_trends,
+  by = "leg",
+  adjust = "holm"
+)
+
+head_leg_group_slope_contrasts <- tidy_emm(
+  head_leg_group_slope_pairs,
+  adjust = "holm"
+)
+
+# Do the three leg pairs differ in their head-integration slope
+# within each group?
+head_leg_leg_slope_pairs <- pairs(
+  head_leg_trends,
+  by = "group",
+  adjust = "holm"
+)
+
+head_leg_leg_slope_contrasts <- tidy_emm(
+  head_leg_leg_slope_pairs,
+  adjust = "holm"
+)
+
+# Planned morph contrasts in compensation slopes within each leg.
+head_leg_strategy_slope_object <- contrast(
+  head_leg_trends,
+  method = strategy_contrasts_full,
+  by = "leg",
+  adjust = "holm"
+)
+
+head_leg_strategy_slope_contrasts <- tidy_emm(
+  head_leg_strategy_slope_object,
+  adjust = "holm"
+)
+
+p_head_leg_compensation <- ggplot(
+  legs_long,
+  aes(
+    x = relative_head_size,
+    y = log_leg_length,
+    colour = group
+  )
+) +
+  geom_point(alpha = 0.45, na.rm = TRUE) +
+  geom_smooth(
+    method = "lm",
+    formula = y ~ x,
+    se = TRUE,
+    na.rm = TRUE
+  ) +
+  facet_wrap(~ leg, scales = "free_y") +
+  labs(
+    x = "Relative head size (within-group allometric residual)",
+    y = "Log leg length",
+    colour = "Group"
+  ) +
   theme_weta()
 
 
@@ -929,16 +1425,17 @@ segment_slope_contrasts <- purrr::imap_dfr(
   relocate(segment)
 
 
-# 12. EAR–FORETIBIA RELATIONSHIP -----------------------------
-# The response is log(sqrt(ear area)), a linearized ear dimension.
-# The full model asks whether ear–tibia and ear–body-size slopes
-# differ among groups. Current analyses support common slopes, so
-# the additive model is used for final adjusted group comparisons.
+# 12. BODY-SIZE-ADJUSTED SENSORY INVESTMENT -----------------
+# These are the primary morph-comparison models for sensory traits.
+# All groups overlap at pronotum = 7.2 mm, so adjusted means are
+# interpolations rather than extrapolations.
 
-p_ear <- ggplot(
+# 12A. Ear investment relative to body size ------------------
+
+p_ear_body <- ggplot(
   dat,
   aes(
-    x = log_foretibia,
+    x = logP_c,
     y = log_ear_linear,
     colour = group
   )
@@ -951,122 +1448,95 @@ p_ear <- ggplot(
     na.rm = TRUE
   ) +
   labs(
-    x = "Log foretibia length",
+    x = paste0(
+      "Log pronotum length centred at ",
+      reference_pronotum,
+      " mm"
+    ),
     y = "Log linearized ear size",
     colour = "Group"
   ) +
   theme_weta()
 
-# Full model with group-specific body-size and ear–tibia slopes.
-mod_ear_full <- lm(
-  log_ear_linear ~
-    logP_c * group +
-    log_foretibia_c * group,
+mod_ear_body_common <- lm(
+  log_ear_linear ~ logP_c + group,
   data = dat,
   na.action = na.omit
 )
 
-# Remove the group-specific ear–tibia slopes first.
-mod_ear_no_tibia_interaction <- lm(
-  log_ear_linear ~
-    logP_c * group +
-    log_foretibia_c,
+mod_ear_body_full <- lm(
+  log_ear_linear ~ logP_c * group,
   data = dat,
   na.action = na.omit
 )
 
-# Fully additive model with common body-size and ear–tibia slopes.
-mod_ear_additive <- lm(
-  log_ear_linear ~
-    logP_c +
-    log_foretibia_c +
-    group,
-  data = dat,
-  na.action = na.omit
+ear_body_model_test <- nested_f_test(
+  mod_ear_body_common,
+  mod_ear_body_full,
+  "Ear relative to body size: logP_c x group"
 )
 
-ear_model_tests <- bind_rows(
-  nested_f_test(
-    mod_ear_no_tibia_interaction,
-    mod_ear_full,
-    "Ear: group x foretibia"
-  ),
-  nested_f_test(
-    mod_ear_additive,
-    mod_ear_no_tibia_interaction,
-    "Ear: group x pronotum"
-  )
-)
+# Use the common-slope model for adjusted group means unless the
+# group-by-body-size interaction is supported.
+ear_body_uses_group_specific_slopes <-
+  isTRUE(ear_body_model_test$p_value < alpha)
 
-# Warn if new data no longer support the prespecified additive model.
-if (ear_model_tests$p_value[1] < alpha) {
-  warning(
-    "The group x foretibia interaction is supported. Retain mod_ear_full."
-  )
-}
-if (ear_model_tests$p_value[2] < alpha) {
-  warning(
-    paste0(
-      "The group x pronotum interaction is supported. ",
-      "Retain mod_ear_no_tibia_interaction."
-    )
-  )
+mod_ear_body_final <- if (ear_body_uses_group_specific_slopes) {
+  mod_ear_body_full
+} else {
+  mod_ear_body_common
 }
 
-# Type II partial tests are appropriate for the final additive model.
-ear_additive_anova <- car::Anova(
-  mod_ear_additive,
-  type = 2
-) |>
-  as.data.frame() |>
-  rownames_to_column("term") |>
-  as_tibble()
-
-# Common ear–tibia slope, controlling for pronotum and group.
-ear_tibia_common_slope <- emtrends(
-  mod_ear_additive,
-  ~ 1,
-  var = "log_foretibia_c"
-)
-
-# Group differences at pronotum = 7.2 mm and mean log foretibia.
-ear_group_emm <- emmeans(
-  mod_ear_additive,
+ear_body_trends <- emtrends(
+  mod_ear_body_full,
   ~ group,
-  at = list(
-    logP_c = 0,
-    log_foretibia_c = 0
-  )
+  var = "logP_c"
 )
 
-ear_group_pairs <- pairs(
-  ear_group_emm,
+ear_body_slopes <- tidy_emm(ear_body_trends)
+
+ear_body_slope_contrasts <- tidy_emm(
+  pairs(ear_body_trends, adjust = "holm"),
   adjust = "holm"
 )
 
-ear_vs_female <- contrast(
-  ear_group_emm,
+ear_body_emm <- emmeans(
+  mod_ear_body_final,
+  ~ group,
+  at = list(logP_c = 0)
+)
+
+ear_body_group_pairs <- pairs(
+  ear_body_emm,
+  adjust = "holm"
+)
+
+ear_body_vs_female <- contrast(
+  ear_body_emm,
   method = "trt.vs.ctrl",
   ref = 1,
   adjust = "holm"
 )
 
-adjusted_ear_means <- tidy_emm(ear_group_emm) |>
+ear_body_strategy_object <- contrast(
+  ear_body_emm,
+  method = strategy_contrasts_full,
+  adjust = "holm"
+)
+
+adjusted_ear_body_means <- tidy_emm(ear_body_emm) |>
   mutate(
-    # Linearized ear dimension = sqrt(area).
     predicted_ear_linear = exp(emmean),
     ear_linear_lower = exp(lower.CL),
     ear_linear_upper = exp(upper.CL),
-
-    # Return to the original area scale by squaring.
     predicted_ear_area = exp(2 * emmean),
     ear_area_lower = exp(2 * lower.CL),
     ear_area_upper = exp(2 * upper.CL)
   )
 
-ear_group_contrasts <- ratio_contrast_table(
-  ear_group_pairs,
-  outcome = "Linearized ear size",
+ear_body_group_contrasts <- ratio_contrast_table(
+  ear_body_group_pairs,
+  outcome = "Linearized ear size at common body size",
   adjust = "holm"
 ) |>
   mutate(
@@ -1074,9 +1544,9 @@ ear_group_contrasts <- ratio_contrast_table(
     area_percent_difference = 100 * (area_ratio - 1)
   )
 
-ear_vs_female_contrasts <- ratio_contrast_table(
-  ear_vs_female,
-  outcome = "Linearized ear size",
+ear_body_vs_female_contrasts <- ratio_contrast_table(
+  ear_body_vs_female,
+  outcome = "Linearized ear size at common body size",
   adjust = "holm"
 ) |>
   mutate(
@@ -1084,15 +1554,43 @@ ear_vs_female_contrasts <- ratio_contrast_table(
     area_percent_difference = 100 * (area_ratio - 1)
   )
 
+ear_body_strategy_contrasts <- ratio_contrast_table(
+  ear_body_strategy_object,
+  outcome = "Linearized ear size at common body size",
+  adjust = "holm"
+) |>
+  mutate(
+    area_ratio = ratio^2,
+    area_percent_difference = 100 * (area_ratio - 1)
+  )
 
-# 13. EYE–HEAD RELATIONSHIP ----------------------------------
-# This mirrors the ear analysis. Eye length is related to a linear
-# composite head size while pronotum controls overall body size.
+p_adjusted_ear_body <- ggplot(
+  adjusted_ear_body_means,
+  aes(x = group, y = predicted_ear_area)
+) +
+  geom_point(size = 2.5) +
+  geom_errorbar(
+    aes(ymin = ear_area_lower, ymax = ear_area_upper),
+    width = 0.12
+  ) +
+  labs(
+    x = NULL,
+    y = paste0(
+      "Predicted ear area at pronotum = ",
+      reference_pronotum,
+      " mm"
+    )
+  ) +
+  scale_x_discrete(labels = group_axis_labels) +
+  theme_weta()
 
-p_eye <- ggplot(
+
+# 12B. Eye investment relative to body size ------------------
+
+p_eye_body <- ggplot(
   dat,
   aes(
-    x = log_head_size,
+    x = logP_c,
     y = log_eye,
     colour = group
   )
@@ -1105,211 +1603,459 @@ p_eye <- ggplot(
     na.rm = TRUE
   ) +
   labs(
-    x = "Log head size",
+    x = paste0(
+      "Log pronotum length centred at ",
+      reference_pronotum,
+      " mm"
+    ),
     y = "Log eye length",
     colour = "Group"
   ) +
   theme_weta()
 
-mod_eye_full <- lm(
-  log_eye ~
-    logP_c * group +
-    log_head_size_c * group,
+mod_eye_body_common <- lm(
+  log_eye ~ logP_c + group,
   data = dat,
   na.action = na.omit
 )
 
-mod_eye_no_head_interaction <- lm(
-  log_eye ~
-    logP_c * group +
-    log_head_size_c,
+mod_eye_body_full <- lm(
+  log_eye ~ logP_c * group,
   data = dat,
   na.action = na.omit
 )
 
-mod_eye_additive <- lm(
-  log_eye ~
-    logP_c +
-    log_head_size_c +
-    group,
-  data = dat,
-  na.action = na.omit
+eye_body_model_test <- nested_f_test(
+  mod_eye_body_common,
+  mod_eye_body_full,
+  "Eye relative to body size: logP_c x group"
 )
 
-eye_model_tests <- bind_rows(
-  nested_f_test(
-    mod_eye_no_head_interaction,
-    mod_eye_full,
-    "Eye: group x head size"
-  ),
-  nested_f_test(
-    mod_eye_additive,
-    mod_eye_no_head_interaction,
-    "Eye: group x pronotum"
-  )
-)
+# Use the common-slope model for adjusted group means unless the
+# group-by-body-size interaction is supported.
+eye_body_uses_group_specific_slopes <-
+  isTRUE(eye_body_model_test$p_value < alpha)
 
-if (eye_model_tests$p_value[1] < alpha) {
-  warning(
-    "The group x head-size interaction is supported. Retain mod_eye_full."
-  )
-}
-if (eye_model_tests$p_value[2] < alpha) {
-  warning(
-    paste0(
-      "The group x pronotum interaction is supported. ",
-      "Retain mod_eye_no_head_interaction."
-    )
-  )
+mod_eye_body_final <- if (eye_body_uses_group_specific_slopes) {
+  mod_eye_body_full
+} else {
+  mod_eye_body_common
 }
 
-eye_additive_anova <- car::Anova(
-  mod_eye_additive,
-  type = 2
-) |>
-  as.data.frame() |>
-  rownames_to_column("term") |>
-  as_tibble()
-
-eye_head_common_slope <- emtrends(
-  mod_eye_additive,
-  ~ 1,
-  var = "log_head_size_c"
-)
-
-eye_group_emm <- emmeans(
-  mod_eye_additive,
+eye_body_trends <- emtrends(
+  mod_eye_body_full,
   ~ group,
-  at = list(
-    logP_c = 0,
-    log_head_size_c = 0
-  )
+  var = "logP_c"
 )
 
-eye_group_pairs <- pairs(
-  eye_group_emm,
+eye_body_slopes <- tidy_emm(eye_body_trends)
+
+eye_body_slope_contrasts <- tidy_emm(
+  pairs(eye_body_trends, adjust = "holm"),
   adjust = "holm"
 )
 
-eye_vs_female <- contrast(
-  eye_group_emm,
+eye_body_emm <- emmeans(
+  mod_eye_body_final,
+  ~ group,
+  at = list(logP_c = 0)
+)
+
+eye_body_group_pairs <- pairs(
+  eye_body_emm,
+  adjust = "holm"
+)
+
+eye_body_vs_female <- contrast(
+  eye_body_emm,
   method = "trt.vs.ctrl",
   ref = 1,
   adjust = "holm"
 )
 
-adjusted_eye_means <- tidy_emm(eye_group_emm) |>
+eye_body_strategy_object <- contrast(
+  eye_body_emm,
+  method = strategy_contrasts_full,
+  adjust = "holm"
+)
+
+adjusted_eye_body_means <- tidy_emm(eye_body_emm) |>
   mutate(
     predicted_eye_length = exp(emmean),
     eye_lower = exp(lower.CL),
     eye_upper = exp(upper.CL)
   )
 
-eye_group_contrasts <- ratio_contrast_table(
-  eye_group_pairs,
-  outcome = "Eye length",
+eye_body_group_contrasts <- ratio_contrast_table(
+  eye_body_group_pairs,
+  outcome = "Eye length at common body size",
   adjust = "holm"
 )
 
-eye_vs_female_contrasts <- ratio_contrast_table(
-  eye_vs_female,
-  outcome = "Eye length",
+eye_body_vs_female_contrasts <- ratio_contrast_table(
+  eye_body_vs_female,
+  outcome = "Eye length at common body size",
+  adjust = "holm"
+)
+
+eye_body_strategy_contrasts <- ratio_contrast_table(
+  eye_body_strategy_object,
+  outcome = "Eye length at common body size",
+  adjust = "holm"
+)
+
+p_adjusted_eye_body <- ggplot(
+  adjusted_eye_body_means,
+  aes(x = group, y = predicted_eye_length)
+) +
+  geom_point(size = 2.5) +
+  geom_errorbar(
+    aes(ymin = eye_lower, ymax = eye_upper),
+    width = 0.12
+  ) +
+  labs(
+    x = NULL,
+    y = paste0(
+      "Predicted eye length at pronotum = ",
+      reference_pronotum,
+      " mm"
+    )
+  ) +
+  scale_x_discrete(labels = group_axis_labels) +
+  theme_weta()
+
+
+# 13. LOCAL DEVELOPMENTAL INTEGRATION ------------------------
+# Relative supporting-trait values are residuals from group-specific
+# body-size allometries. Thus, slopes are estimated from observed
+# within-group variation and do not require a common absolute head
+# or foretibia size across groups.
+
+# 13A. Ear-foretibia integration -----------------------------
+
+p_ear_local <- ggplot(
+  dat,
+  aes(
+    x = relative_foretibia_size,
+    y = log_ear_linear,
+    colour = group
+  )
+) +
+  geom_point(alpha = 0.55, na.rm = TRUE) +
+  geom_smooth(
+    method = "lm",
+    formula = y ~ x,
+    se = TRUE,
+    na.rm = TRUE
+  ) +
+  labs(
+    x = "Relative foretibia size (within-group allometric residual)",
+    y = "Log linearized ear size",
+    colour = "Group"
+  ) +
+  theme_weta()
+
+mod_ear_local_common <- lm(
+  log_ear_linear ~
+    logP_c * group +
+    relative_foretibia_size,
+  data = dat,
+  na.action = na.omit
+)
+
+mod_ear_local_full <- lm(
+  log_ear_linear ~
+    logP_c * group +
+    relative_foretibia_size * group,
+  data = dat,
+  na.action = na.omit
+)
+
+ear_local_model_test <- nested_f_test(
+  mod_ear_local_common,
+  mod_ear_local_full,
+  "Ear integration: group x relative foretibia"
+)
+
+ear_local_trends <- emtrends(
+  mod_ear_local_full,
+  ~ group,
+  var = "relative_foretibia_size"
+)
+
+ear_local_slopes <- tidy_emm(ear_local_trends)
+
+ear_local_slope_contrasts <- tidy_emm(
+  pairs(ear_local_trends, adjust = "holm"),
+  adjust = "holm"
+)
+
+ear_local_strategy_slope_object <- contrast(
+  ear_local_trends,
+  method = strategy_contrasts_full,
+  adjust = "holm"
+)
+
+ear_local_strategy_slope_contrasts <- tidy_emm(
+  ear_local_strategy_slope_object,
   adjust = "holm"
 )
 
 
-# 14. MODEL DIAGNOSTICS --------------------------------------
-# The joint mixed model is primary. Separate leg models are checked
-# using the interaction form for forelegs and hindlegs and the
-# common-slope form for midlegs, based on the current omnibus tests.
+# 13B. Eye-head integration and weapon-eye trade-off ---------
+# A positive relative-head slope indicates developmental
+# integration; a negative slope supports a local head-eye
+# trade-off; a slope near zero is consistent with decoupling.
+
+p_eye_local <- ggplot(
+  dat,
+  aes(
+    x = relative_head_size,
+    y = log_eye,
+    colour = group
+  )
+) +
+  geom_point(alpha = 0.55, na.rm = TRUE) +
+  geom_smooth(
+    method = "lm",
+    formula = y ~ x,
+    se = TRUE,
+    na.rm = TRUE
+  ) +
+  labs(
+    x = "Relative head size (within-group allometric residual)",
+    y = "Log eye length",
+    colour = "Group"
+  ) +
+  theme_weta()
+
+mod_eye_local_common <- lm(
+  log_eye ~
+    logP_c * group +
+    relative_head_size,
+  data = dat,
+  na.action = na.omit
+)
+
+mod_eye_local_full <- lm(
+  log_eye ~
+    logP_c * group +
+    relative_head_size * group,
+  data = dat,
+  na.action = na.omit
+)
+
+eye_local_model_test <- nested_f_test(
+  mod_eye_local_common,
+  mod_eye_local_full,
+  "Eye integration: group x relative head size"
+)
+
+eye_local_trends <- emtrends(
+  mod_eye_local_full,
+  ~ group,
+  var = "relative_head_size"
+)
+
+eye_local_slopes <- tidy_emm(eye_local_trends)
+
+eye_local_slope_contrasts <- tidy_emm(
+  pairs(eye_local_trends, adjust = "holm"),
+  adjust = "holm"
+)
+
+eye_local_strategy_slope_object <- contrast(
+  eye_local_trends,
+  method = strategy_contrasts_full,
+  adjust = "holm"
+)
+
+eye_local_strategy_slope_contrasts <- tidy_emm(
+  eye_local_strategy_slope_object,
+  adjust = "holm"
+)
+
+
+# 14. WEAPON-EAR PHENOTYPIC COVARIANCE -----------------------
+# This exploratory model asks whether individuals with relatively
+# large heads also have relatively large or small ears, after
+# controlling for group-specific body-size allometry. A negative
+# slope is consistent with an observable weapon-sensory allocation
+# trade-off; a positive slope indicates phenotypic integration; a
+# slope near zero suggests phenotypic decoupling. These associations
+# do not distinguish resource acquisition from resource allocation.
+
+p_ear_weapon <- ggplot(
+  dat,
+  aes(
+    x = relative_head_size,
+    y = log_ear_linear,
+    colour = group
+  )
+) +
+  geom_point(alpha = 0.55, na.rm = TRUE) +
+  geom_smooth(
+    method = "lm",
+    formula = y ~ x,
+    se = TRUE,
+    na.rm = TRUE
+  ) +
+  labs(
+    x = "Relative head size (within-group allometric residual)",
+    y = "Log linearized ear size",
+    colour = "Group"
+  ) +
+  theme_weta()
+
+mod_ear_weapon_common <- lm(
+  log_ear_linear ~
+    logP_c * group +
+    relative_head_size,
+  data = dat,
+  na.action = na.omit
+)
+
+mod_ear_weapon_full <- lm(
+  log_ear_linear ~
+    logP_c * group +
+    relative_head_size * group,
+  data = dat,
+  na.action = na.omit
+)
+
+ear_weapon_model_test <- nested_f_test(
+  mod_ear_weapon_common,
+  mod_ear_weapon_full,
+  "Ear-weapon covariance: group x relative head size"
+)
+
+ear_weapon_trends <- emtrends(
+  mod_ear_weapon_full,
+  ~ group,
+  var = "relative_head_size"
+)
+
+ear_weapon_slopes <- tidy_emm(ear_weapon_trends)
+
+ear_weapon_slope_contrasts <- tidy_emm(
+  pairs(ear_weapon_trends, adjust = "holm"),
+  adjust = "holm"
+)
+
+ear_weapon_strategy_slope_object <- contrast(
+  ear_weapon_trends,
+  method = strategy_contrasts_full,
+  adjust = "holm"
+)
+
+ear_weapon_strategy_slope_contrasts <- tidy_emm(
+  ear_weapon_strategy_slope_object,
+  adjust = "holm"
+)
+
+
+# 15. MODEL DIAGNOSTICS --------------------------------------
+# The joint allocation and head-leg compensation models are the
+# primary mixed models. Observation-level diagnostics are saved for
+# the principal lm models. Flagging criteria identify observations
+# for inspection and do not trigger automatic deletion.
 
 mod_fore_final <- mod_fore_interaction
 mod_mid_final  <- mod_mid_common
 mod_hind_final <- mod_hind_interaction
 
-# Collinearity tables are easier to save and report than VIF plots.
-collinearity_tables <- bind_rows(
-  performance::check_collinearity(mod_fore_final) |>
-    as.data.frame() |>
-    as_tibble() |>
-    mutate(model = "Foreleg"),
-  performance::check_collinearity(mod_mid_final) |>
-    as.data.frame() |>
-    as_tibble() |>
-    mutate(model = "Midleg"),
-  performance::check_collinearity(mod_hind_final) |>
-    as.data.frame() |>
-    as_tibble() |>
-    mutate(model = "Hindleg"),
-  performance::check_collinearity(mod_ear_additive) |>
-    as.data.frame() |>
-    as_tibble() |>
-    mutate(model = "Ear"),
-  performance::check_collinearity(mod_eye_additive) |>
-    as.data.frame() |>
-    as_tibble() |>
-    mutate(model = "Eye")
-) |>
-  relocate(model)
+safe_collinearity <- function(model, model_name) {
+  tryCatch(
+    performance::check_collinearity(model) |>
+      as.data.frame() |>
+      as_tibble() |>
+      mutate(
+        model = model_name,
+        error = NA_character_
+      ) |>
+      relocate(model),
+    error = function(e) {
+      tibble(
+        model = model_name,
+        error = conditionMessage(e)
+      )
+    }
+  )
+}
 
-# Observation-level diagnostics for the lm models.
-fore_diag <- flag_lm_diagnostics(
-  get_lm_diagnostics(mod_fore_final, dat),
-  mod_fore_final
-)
-mid_diag <- flag_lm_diagnostics(
-  get_lm_diagnostics(mod_mid_final, dat),
-  mod_mid_final
-)
-hind_diag <- flag_lm_diagnostics(
-  get_lm_diagnostics(mod_hind_final, dat),
-  mod_hind_final
-)
-ear_diag <- flag_lm_diagnostics(
-  get_lm_diagnostics(mod_ear_additive, dat),
-  mod_ear_additive
-)
-eye_diag <- flag_lm_diagnostics(
-  get_lm_diagnostics(mod_eye_additive, dat),
-  mod_eye_additive
+collinearity_model_list <- list(
+  foreleg = mod_fore_final,
+  midleg = mod_mid_final,
+  hindleg = mod_hind_final,
+  head_allometry = mod_head_allometry_full,
+  foretibia_allometry = mod_foretibia_allometry_full,
+  ear_body = mod_ear_body_final,
+  eye_body = mod_eye_body_final,
+  ear_local = mod_ear_local_full,
+  eye_local = mod_eye_local_full,
+  ear_weapon = mod_ear_weapon_full
 )
 
-fore_diag_flagged <- filter(fore_diag, flagged)
-mid_diag_flagged  <- filter(mid_diag, flagged)
-hind_diag_flagged <- filter(hind_diag, flagged)
-ear_diag_flagged  <- filter(ear_diag, flagged)
-eye_diag_flagged  <- filter(eye_diag, flagged)
+collinearity_tables <- purrr::imap_dfr(
+  collinearity_model_list,
+  ~ safe_collinearity(.x, .y)
+)
 
-# Save graphical diagnostic panels.
-save_check_model(
-  mod_fore_final,
-  file.path(figures_dir, "diagnostics_foreleg.png")
+lm_diagnostic_models <- list(
+  foreleg = mod_fore_final,
+  midleg = mod_mid_final,
+  hindleg = mod_hind_final,
+  head_allometry = mod_head_allometry_full,
+  foretibia_allometry = mod_foretibia_allometry_full,
+  ear_body = mod_ear_body_final,
+  eye_body = mod_eye_body_final,
+  ear_local = mod_ear_local_full,
+  eye_local = mod_eye_local_full,
+  ear_weapon = mod_ear_weapon_full
 )
-save_check_model(
-  mod_mid_final,
-  file.path(figures_dir, "diagnostics_midleg.png")
+
+lm_diagnostics <- purrr::map(
+  lm_diagnostic_models,
+  ~ flag_lm_diagnostics(
+    get_lm_diagnostics(.x, dat),
+    .x
+  )
 )
-save_check_model(
-  mod_hind_final,
-  file.path(figures_dir, "diagnostics_hindleg.png")
+
+lm_diagnostics_flagged <- purrr::map(
+  lm_diagnostics,
+  ~ filter(.x, flagged)
 )
+
+# Save graphical diagnostic panels for lm models.
+purrr::iwalk(
+  lm_diagnostic_models,
+  function(model_object, model_name) {
+    save_check_model(
+      model_object,
+      file.path(
+        figures_dir,
+        paste0("diagnostics_", model_name, ".png")
+      )
+    )
+  }
+)
+
+# Save graphical diagnostics for the two primary mixed models.
 save_check_model(
   mod_leg_allocation,
-  file.path(figures_dir, "diagnostics_joint_leg_model.png")
+  file.path(figures_dir, "diagnostics_joint_leg_allocation.png")
 )
+
 save_check_model(
-  mod_ear_additive,
-  file.path(figures_dir, "diagnostics_ear_model.png")
-)
-save_check_model(
-  mod_eye_additive,
-  file.path(figures_dir, "diagnostics_eye_model.png")
+  mod_head_leg_compensation,
+  file.path(figures_dir, "diagnostics_head_leg_compensation.png")
 )
 
 
-# 15. SAVE RESULTS TABLES ------------------------------------
+# 16. SAVE RESULTS TABLES ------------------------------------
 
-# QC and descriptive outputs.
+# QC, support, and descriptive outputs.
 write_csv(missing_summary, file.path(tables_dir, "qc_missing_values.csv"))
 write_csv(raw_range_summary, file.path(tables_dir, "qc_raw_ranges.csv"))
 write_csv(nonpositive_summary, file.path(tables_dir, "qc_nonpositive_values.csv"))
@@ -1317,7 +2063,12 @@ write_csv(sex_morph_table, file.path(tables_dir, "qc_sex_by_morph.csv"))
 write_csv(group_summary, file.path(tables_dir, "group_descriptive_statistics.csv"))
 write_csv(body_size_ranges, file.path(tables_dir, "body_size_ranges.csv"))
 write_csv(common_body_size, file.path(tables_dir, "common_body_size_range.csv"))
+write_csv(supporting_trait_ranges, file.path(tables_dir, "supporting_trait_ranges.csv"))
+write_csv(common_support_ranges, file.path(tables_dir, "common_support_ranges.csv"))
 write_csv(centering_check, file.path(tables_dir, "centering_check.csv"))
+write_csv(relative_trait_model_tests, file.path(tables_dir, "relative_trait_model_tests.csv"))
+write_csv(relative_trait_allometric_slopes, file.path(tables_dir, "relative_trait_allometric_slopes.csv"))
+write_csv(relative_size_check, file.path(tables_dir, "relative_size_check.csv"))
 
 # Separate leg analyses.
 write_csv(leg_slope_model_tests, file.path(tables_dir, "leg_slope_model_tests.csv"))
@@ -1329,47 +2080,82 @@ write_csv(leg_allocation_anova, file.path(tables_dir, "joint_leg_model_type3_ano
 write_csv(adjusted_leg_means, file.path(tables_dir, "joint_adjusted_leg_means.csv"))
 write_csv(leg_pairwise_contrasts, file.path(tables_dir, "joint_leg_all_pairwise_contrasts.csv"))
 write_csv(leg_vs_female_contrasts, file.path(tables_dir, "joint_leg_males_vs_female.csv"))
+write_csv(leg_strategy_contrasts, file.path(tables_dir, "joint_leg_strategy_contrasts.csv"))
+write_csv(allocation_difference_contrasts, file.path(tables_dir, "joint_anterior_posterior_difference_contrasts.csv"))
+write_csv(allocation_within_group_contrasts, file.path(tables_dir, "joint_within_group_anterior_hindleg_contrasts.csv"))
 write_csv(joint_slopes_table, file.path(tables_dir, "joint_leg_slopes.csv"))
 write_csv(joint_group_slope_contrasts, file.path(tables_dir, "joint_group_slopes_within_leg.csv"))
 write_csv(joint_leg_slope_contrasts, file.path(tables_dir, "joint_leg_slopes_within_group.csv"))
 write_csv(three_way_slope_contrasts_table, file.path(tables_dir, "joint_three_way_slope_contrasts.csv"))
+
+# Direct head-leg compensation.
+write_csv(head_leg_compensation_anova, file.path(tables_dir, "head_leg_compensation_type3_anova.csv"))
+write_csv(head_leg_trends_table, file.path(tables_dir, "head_leg_compensation_slopes.csv"))
+write_csv(head_leg_group_slope_contrasts, file.path(tables_dir, "head_leg_group_slopes_within_leg.csv"))
+write_csv(head_leg_leg_slope_contrasts, file.path(tables_dir, "head_leg_leg_slopes_within_group.csv"))
+write_csv(head_leg_strategy_slope_contrasts, file.path(tables_dir, "head_leg_strategy_slope_contrasts.csv"))
 
 # Segment-level analyses.
 write_csv(segment_model_tests, file.path(tables_dir, "segment_slope_model_tests.csv"))
 write_csv(segment_slopes, file.path(tables_dir, "segment_group_specific_slopes.csv"))
 write_csv(segment_slope_contrasts, file.path(tables_dir, "segment_slope_pairwise_contrasts.csv"))
 
-# Ear analyses.
-write_csv(ear_model_tests, file.path(tables_dir, "ear_nested_model_tests.csv"))
-write_csv(ear_additive_anova, file.path(tables_dir, "ear_additive_type2_anova.csv"))
-write_csv(tidy_emm(ear_tibia_common_slope), file.path(tables_dir, "ear_tibia_common_slope.csv"))
-write_csv(adjusted_ear_means, file.path(tables_dir, "ear_adjusted_group_means.csv"))
-write_csv(ear_group_contrasts, file.path(tables_dir, "ear_all_pairwise_group_contrasts.csv"))
-write_csv(ear_vs_female_contrasts, file.path(tables_dir, "ear_males_vs_female.csv"))
+# Ear investment relative to body size.
+write_csv(ear_body_model_test, file.path(tables_dir, "ear_body_slope_model_test.csv"))
+write_csv(ear_body_slopes, file.path(tables_dir, "ear_body_group_specific_slopes.csv"))
+write_csv(ear_body_slope_contrasts, file.path(tables_dir, "ear_body_slope_contrasts.csv"))
+write_csv(adjusted_ear_body_means, file.path(tables_dir, "ear_body_adjusted_group_means.csv"))
+write_csv(ear_body_group_contrasts, file.path(tables_dir, "ear_body_all_pairwise_group_contrasts.csv"))
+write_csv(ear_body_vs_female_contrasts, file.path(tables_dir, "ear_body_males_vs_female.csv"))
+write_csv(ear_body_strategy_contrasts, file.path(tables_dir, "ear_body_strategy_contrasts.csv"))
 
-# Eye analyses.
-write_csv(eye_model_tests, file.path(tables_dir, "eye_nested_model_tests.csv"))
-write_csv(eye_additive_anova, file.path(tables_dir, "eye_additive_type2_anova.csv"))
-write_csv(tidy_emm(eye_head_common_slope), file.path(tables_dir, "eye_head_common_slope.csv"))
-write_csv(adjusted_eye_means, file.path(tables_dir, "eye_adjusted_group_means.csv"))
-write_csv(eye_group_contrasts, file.path(tables_dir, "eye_all_pairwise_group_contrasts.csv"))
-write_csv(eye_vs_female_contrasts, file.path(tables_dir, "eye_males_vs_female.csv"))
+# Eye investment relative to body size.
+write_csv(eye_body_model_test, file.path(tables_dir, "eye_body_slope_model_test.csv"))
+write_csv(eye_body_slopes, file.path(tables_dir, "eye_body_group_specific_slopes.csv"))
+write_csv(eye_body_slope_contrasts, file.path(tables_dir, "eye_body_slope_contrasts.csv"))
+write_csv(adjusted_eye_body_means, file.path(tables_dir, "eye_body_adjusted_group_means.csv"))
+write_csv(eye_body_group_contrasts, file.path(tables_dir, "eye_body_all_pairwise_group_contrasts.csv"))
+write_csv(eye_body_vs_female_contrasts, file.path(tables_dir, "eye_body_males_vs_female.csv"))
+write_csv(eye_body_strategy_contrasts, file.path(tables_dir, "eye_body_strategy_contrasts.csv"))
+
+# Local sensory integration.
+write_csv(ear_local_model_test, file.path(tables_dir, "ear_local_integration_model_test.csv"))
+write_csv(ear_local_slopes, file.path(tables_dir, "ear_local_integration_slopes.csv"))
+write_csv(ear_local_slope_contrasts, file.path(tables_dir, "ear_local_integration_slope_contrasts.csv"))
+write_csv(ear_local_strategy_slope_contrasts, file.path(tables_dir, "ear_local_strategy_slope_contrasts.csv"))
+
+write_csv(eye_local_model_test, file.path(tables_dir, "eye_local_integration_model_test.csv"))
+write_csv(eye_local_slopes, file.path(tables_dir, "eye_local_integration_slopes.csv"))
+write_csv(eye_local_slope_contrasts, file.path(tables_dir, "eye_local_integration_slope_contrasts.csv"))
+write_csv(eye_local_strategy_slope_contrasts, file.path(tables_dir, "eye_local_strategy_slope_contrasts.csv"))
+
+# Direct weapon-ear covariance.
+write_csv(ear_weapon_model_test, file.path(tables_dir, "ear_weapon_covariance_model_test.csv"))
+write_csv(ear_weapon_slopes, file.path(tables_dir, "ear_weapon_covariance_slopes.csv"))
+write_csv(ear_weapon_slope_contrasts, file.path(tables_dir, "ear_weapon_covariance_slope_contrasts.csv"))
+write_csv(ear_weapon_strategy_slope_contrasts, file.path(tables_dir, "ear_weapon_strategy_slope_contrasts.csv"))
 
 # Diagnostics.
 write_csv(collinearity_tables, file.path(tables_dir, "model_collinearity.csv"))
-write_csv(fore_diag, file.path(tables_dir, "diagnostics_foreleg_all.csv"))
-write_csv(mid_diag, file.path(tables_dir, "diagnostics_midleg_all.csv"))
-write_csv(hind_diag, file.path(tables_dir, "diagnostics_hindleg_all.csv"))
-write_csv(ear_diag, file.path(tables_dir, "diagnostics_ear_all.csv"))
-write_csv(eye_diag, file.path(tables_dir, "diagnostics_eye_all.csv"))
-write_csv(fore_diag_flagged, file.path(tables_dir, "diagnostics_foreleg_flagged.csv"))
-write_csv(mid_diag_flagged, file.path(tables_dir, "diagnostics_midleg_flagged.csv"))
-write_csv(hind_diag_flagged, file.path(tables_dir, "diagnostics_hindleg_flagged.csv"))
-write_csv(ear_diag_flagged, file.path(tables_dir, "diagnostics_ear_flagged.csv"))
-write_csv(eye_diag_flagged, file.path(tables_dir, "diagnostics_eye_flagged.csv"))
+
+purrr::iwalk(
+  lm_diagnostics,
+  ~ write_csv(
+    .x,
+    file.path(tables_dir, paste0("diagnostics_", .y, "_all.csv"))
+  )
+)
+
+purrr::iwalk(
+  lm_diagnostics_flagged,
+  ~ write_csv(
+    .x,
+    file.path(tables_dir, paste0("diagnostics_", .y, "_flagged.csv"))
+  )
+)
 
 
-# 16. SAVE FIGURES -------------------------------------------
+# 17. SAVE FIGURES -------------------------------------------
 
 ggsave(
   file.path(figures_dir, "body_size_distributions.png"),
@@ -1396,6 +2182,14 @@ ggsave(
 )
 
 ggsave(
+  file.path(figures_dir, "head_leg_compensation.png"),
+  p_head_leg_compensation,
+  width = 9,
+  height = 7,
+  dpi = 300
+)
+
+ggsave(
   file.path(figures_dir, "segment_allometries.png"),
   p_segments,
   width = 10,
@@ -1404,25 +2198,120 @@ ggsave(
 )
 
 ggsave(
-  file.path(figures_dir, "ear_foretibia_relationship.png"),
-  p_ear,
+  file.path(figures_dir, "ear_body_allometry.png"),
+  p_ear_body,
   width = 7,
   height = 5,
   dpi = 300
 )
 
 ggsave(
-  file.path(figures_dir, "eye_head_relationship.png"),
-  p_eye,
+  file.path(figures_dir, "ear_body_adjusted_means.png"),
+  p_adjusted_ear_body,
   width = 7,
   height = 5,
   dpi = 300
 )
 
+ggsave(
+  file.path(figures_dir, "eye_body_allometry.png"),
+  p_eye_body,
+  width = 7,
+  height = 5,
+  dpi = 300
+)
 
-# 17. SAVE MODEL OBJECTS AND TEXT SUMMARY --------------------
+ggsave(
+  file.path(figures_dir, "eye_body_adjusted_means.png"),
+  p_adjusted_eye_body,
+  width = 7,
+  height = 5,
+  dpi = 300
+)
+
+ggsave(
+  file.path(figures_dir, "ear_local_foretibia_integration.png"),
+  p_ear_local,
+  width = 7,
+  height = 5,
+  dpi = 300
+)
+
+ggsave(
+  file.path(figures_dir, "eye_local_head_integration.png"),
+  p_eye_local,
+  width = 7,
+  height = 5,
+  dpi = 300
+)
+
+ggsave(
+  file.path(figures_dir, "ear_weapon_covariance.png"),
+  p_ear_weapon,
+  width = 7,
+  height = 5,
+  dpi = 300
+)
+
+# Confirm that every table and figure required by the QMD report
+# exists before the analysis is declared complete.
+report_required_outputs <- c(
+  file.path(tables_dir, "group_descriptive_statistics.csv"),
+  file.path(tables_dir, "common_body_size_range.csv"),
+  file.path(tables_dir, "joint_leg_model_type3_anova.csv"),
+  file.path(tables_dir, "joint_adjusted_leg_means.csv"),
+  file.path(tables_dir, "joint_leg_males_vs_female.csv"),
+  file.path(tables_dir, "joint_leg_strategy_contrasts.csv"),
+  file.path(tables_dir, "joint_anterior_posterior_difference_contrasts.csv"),
+  file.path(tables_dir, "joint_leg_slopes.csv"),
+  file.path(tables_dir, "joint_group_slopes_within_leg.csv"),
+  file.path(tables_dir, "joint_three_way_slope_contrasts.csv"),
+  file.path(tables_dir, "segment_slope_model_tests.csv"),
+  file.path(tables_dir, "head_leg_compensation_type3_anova.csv"),
+  file.path(tables_dir, "head_leg_compensation_slopes.csv"),
+  file.path(tables_dir, "head_leg_strategy_slope_contrasts.csv"),
+  file.path(tables_dir, "ear_body_slope_model_test.csv"),
+  file.path(tables_dir, "ear_body_adjusted_group_means.csv"),
+  file.path(tables_dir, "ear_body_strategy_contrasts.csv"),
+  file.path(tables_dir, "eye_body_slope_model_test.csv"),
+  file.path(tables_dir, "eye_body_adjusted_group_means.csv"),
+  file.path(tables_dir, "eye_body_strategy_contrasts.csv"),
+  file.path(tables_dir, "ear_local_integration_model_test.csv"),
+  file.path(tables_dir, "ear_local_integration_slopes.csv"),
+  file.path(tables_dir, "eye_local_integration_model_test.csv"),
+  file.path(tables_dir, "eye_local_integration_slopes.csv"),
+  file.path(tables_dir, "ear_weapon_covariance_model_test.csv"),
+  file.path(tables_dir, "ear_weapon_covariance_slopes.csv"),
+  file.path(figures_dir, "adjusted_leg_means.png"),
+  file.path(figures_dir, "leg_allometries.png"),
+  file.path(figures_dir, "head_leg_compensation.png"),
+  file.path(figures_dir, "ear_body_adjusted_means.png"),
+  file.path(figures_dir, "eye_body_adjusted_means.png")
+)
+
+missing_report_outputs <- report_required_outputs[
+  !file.exists(report_required_outputs)
+]
+
+if (length(missing_report_outputs) > 0) {
+  stop(
+    paste0(
+      "The analysis completed, but the following QMD inputs are missing:\n",
+      paste(missing_report_outputs, collapse = "\n")
+    ),
+    call. = FALSE
+  )
+}
+
+
+# 18. SAVE MODEL OBJECTS AND TEXT SUMMARY --------------------
 
 model_objects <- list(
+  head_allometry_common = mod_head_allometry_common,
+  head_allometry_full = mod_head_allometry_full,
+  foretibia_allometry_common = mod_foretibia_allometry_common,
+  foretibia_allometry_full = mod_foretibia_allometry_full,
+
   fore_common = mod_fore_common,
   fore_interaction = mod_fore_interaction,
   mid_common = mod_mid_common,
@@ -1430,14 +2319,24 @@ model_objects <- list(
   hind_common = mod_hind_common,
   hind_interaction = mod_hind_interaction,
   joint_leg_allocation = mod_leg_allocation,
+  head_leg_compensation = mod_head_leg_compensation,
   segment_common = segment_models_common,
   segment_interaction = segment_models_interaction,
-  ear_full = mod_ear_full,
-  ear_no_tibia_interaction = mod_ear_no_tibia_interaction,
-  ear_additive = mod_ear_additive,
-  eye_full = mod_eye_full,
-  eye_no_head_interaction = mod_eye_no_head_interaction,
-  eye_additive = mod_eye_additive
+
+  ear_body_common = mod_ear_body_common,
+  ear_body_full = mod_ear_body_full,
+  ear_body_final = mod_ear_body_final,
+  eye_body_common = mod_eye_body_common,
+  eye_body_full = mod_eye_body_full,
+  eye_body_final = mod_eye_body_final,
+
+  ear_local_common = mod_ear_local_common,
+  ear_local_full = mod_ear_local_full,
+  eye_local_common = mod_eye_local_common,
+  eye_local_full = mod_eye_local_full,
+
+  ear_weapon_common = mod_ear_weapon_common,
+  ear_weapon_full = mod_ear_weapon_full
 )
 
 saveRDS(
@@ -1452,12 +2351,18 @@ capture.output(
     cat("WELLINGTON TREE WETA MORPHOLOGICAL ALLOCATION\n")
     cat("Analysis run:", format(Sys.time()), "\n\n")
 
-    cat("REFERENCE PRONOTUM\n")
+    cat("REFERENCE PRONOTUM AND COMMON SUPPORT\n")
     print(reference_pronotum)
     print(common_body_size)
+    print(common_support_ranges)
 
     cat("\nGROUP DESCRIPTIVES\n")
     print(group_summary)
+
+    cat("\nRELATIVE-TRAIT ALLOMETRIES\n")
+    print(relative_trait_model_tests)
+    print(relative_trait_allometric_slopes)
+    print(relative_size_check)
 
     cat("\nSEPARATE LEG SLOPE MODEL TESTS\n")
     print(leg_slope_model_tests)
@@ -1465,46 +2370,77 @@ capture.output(
     cat("\nSEPARATE LEG SLOPES\n")
     print(leg_slopes)
 
-    cat("\nSEPARATE LEG SLOPE CONTRASTS\n")
-    print(leg_slope_contrasts)
-
     cat("\nJOINT LEG MODEL TYPE III ANOVA\n")
     print(leg_allocation_anova)
 
     cat("\nJOINT ADJUSTED LEG MEANS\n")
     print(adjusted_leg_means)
 
-    cat("\nJOINT MALE-VERSUS-FEMALE LEG CONTRASTS\n")
-    print(leg_vs_female_contrasts)
+    cat("\nJOINT STRATEGY CONTRASTS WITHIN LEG\n")
+    print(leg_strategy_contrasts)
+
+    cat("\nANTERIOR-POSTERIOR ALLOCATION DIFFERENCES\n")
+    print(allocation_difference_contrasts)
 
     cat("\nJOINT LEG SLOPES\n")
     print(joint_slopes_table)
 
-    cat("\nJOINT GROUP SLOPE CONTRASTS WITHIN LEG\n")
-    print(joint_group_slope_contrasts)
+    cat("\nHEAD-LEG COMPENSATION TYPE III ANOVA\n")
+    print(head_leg_compensation_anova)
 
-    cat("\nJOINT LEG SLOPE CONTRASTS WITHIN GROUP\n")
-    print(joint_leg_slope_contrasts)
+    cat("\nHEAD-LEG COMPENSATION SLOPES\n")
+    print(head_leg_trends_table)
 
-    cat("\nTHREE-WAY SLOPE CONTRASTS\n")
-    print(three_way_slope_contrasts_table)
+    cat("\nHEAD-LEG PLANNED STRATEGY SLOPE CONTRASTS\n")
+    print(head_leg_strategy_slope_contrasts)
 
     cat("\nSEGMENT MODEL TESTS\n")
     print(segment_model_tests)
 
-    cat("\nEAR MODEL TESTS\n")
-    print(ear_model_tests)
-    print(ear_additive_anova)
-    print(tidy_emm(ear_tibia_common_slope))
-    print(adjusted_ear_means)
-    print(ear_vs_female_contrasts)
+    cat("\nEAR INVESTMENT RELATIVE TO BODY SIZE\n")
+    cat(
+      "Adjusted means model:",
+      if (ear_body_uses_group_specific_slopes) {
+        "group-specific slopes"
+      } else {
+        "common slope"
+      },
+      "\n"
+    )
+    print(ear_body_model_test)
+    print(ear_body_slopes)
+    print(adjusted_ear_body_means)
+    print(ear_body_strategy_contrasts)
 
-    cat("\nEYE MODEL TESTS\n")
-    print(eye_model_tests)
-    print(eye_additive_anova)
-    print(tidy_emm(eye_head_common_slope))
-    print(adjusted_eye_means)
-    print(eye_vs_female_contrasts)
+    cat("\nEAR-FORETIBIA LOCAL INTEGRATION\n")
+    print(ear_local_model_test)
+    print(ear_local_slopes)
+    print(ear_local_strategy_slope_contrasts)
+
+    cat("\nEYE INVESTMENT RELATIVE TO BODY SIZE\n")
+    cat(
+      "Adjusted means model:",
+      if (eye_body_uses_group_specific_slopes) {
+        "group-specific slopes"
+      } else {
+        "common slope"
+      },
+      "\n"
+    )
+    print(eye_body_model_test)
+    print(eye_body_slopes)
+    print(adjusted_eye_body_means)
+    print(eye_body_strategy_contrasts)
+
+    cat("\nEYE-HEAD LOCAL INTEGRATION / TRADE-OFF\n")
+    print(eye_local_model_test)
+    print(eye_local_slopes)
+    print(eye_local_strategy_slope_contrasts)
+
+    cat("\nDIRECT WEAPON-EAR COVARIANCE\n")
+    print(ear_weapon_model_test)
+    print(ear_weapon_slopes)
+    print(ear_weapon_strategy_slope_contrasts)
   },
   file = file.path(output_dir, "results_ready_summary.txt")
 )

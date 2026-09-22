@@ -1,6 +1,6 @@
 ---
 title: "Supplementary material"
-subtitle: "Coordinated locomotory and sensory divergence across alternative mating strategies in Wellington tree wētā"
+subtitle: "A mosaic of locomotory and sensory trait allocation across alternative mating strategies in Wellington tree wētā"
 author:
   - name: Clint D. Kelly
     affiliations:

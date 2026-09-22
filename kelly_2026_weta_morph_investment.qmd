@@ -29,7 +29,6 @@ params:
   computer: "work"  # use "work" or "home"
 ---
 
-```{=html}
 <!--
 Run weta_trait_analysis_figure_labels.R before rendering this file.
 Set params.computer above to the same value used in the R script.
@@ -37,7 +36,6 @@ Place Bibliography.bib and word-style-template.docx in the same directory as thi
 Render with:
   quarto render weta_results_word.qmd
 -->
-```
 
 ```{r}
 #| label: setup
@@ -50,46 +48,41 @@ library(flextable)
 alpha    <- 0.05
 computer <- params$computer
 
-project_dir <- switch(
-  computer,
-
-  work = paste0(
-    "/Users/uqam/Documents/Research_Admin/research projects/",
-    "Trait compensation"
-  ),
-
-  home = paste0(
-    "/Users/kellyclintdale/Library/Mobile Documents/",
-    "com~apple~CloudDocs/Documents/Research_Admin/research projects/",
-    "Trait compensation"
-  ),
-
-  stop(
-    "params.computer must be set to either 'work' or 'home'.",
-    call. = FALSE
-  )
+# Auto-detect project directory based on which path exists
+work_dir <- paste0(
+  "/Users/uqam/Documents/Research_Admin/research projects/",
+  "Trait compensation"
 )
+
+home_dir <- paste0(
+  "/Users/kellyclintdale/Library/Mobile Documents/",
+  "com~apple~CloudDocs/Documents/Research_Admin/research projects/",
+  "Trait compensation"
+)
+
+# Use whichever directory actually exists, with preference order
+if (dir.exists(work_dir)) {
+  project_dir <- work_dir
+} else if (dir.exists(home_dir)) {
+  project_dir <- home_dir
+} else {
+  # If neither exists, use the one specified by computer parameter
+  project_dir <- switch(
+    computer,
+    work = work_dir,
+    home = home_dir,
+    stop(
+      "Project directory not found and params.computer not recognized. ",
+      "Set params.computer to 'work' or 'home'.",
+      call. = FALSE
+    )
+  )
+}
 
 output_dir  <- file.path(project_dir, "analysis_outputs", "weta_trait_analysis")
 tables_dir  <- file.path(output_dir, "tables")
 figures_dir <- file.path(output_dir, "figures")
 models_dir  <- file.path(output_dir, "models")
-
-# Prefer figures regenerated beside this manuscript when available. This keeps
-# the rendered copy self-contained and ensures complete publication labels.
-local_figures_dir <- file.path(
-  getwd(),
-  "analysis_outputs",
-  "weta_trait_analysis",
-  "figures"
-)
-if (dir.exists(local_figures_dir)) {
-  figures_dir <- local_figures_dir
-}
-repeatability_dir <- Sys.getenv(
-  "WETA_REPEATABILITY_OUTPUT_DIR",
-  unset = file.path(project_dir, "analysis_outputs")
-)
 
 required_files <- c(
   file.path(tables_dir, "group_descriptive_statistics.csv"),
@@ -122,11 +115,7 @@ required_files <- c(
   file.path(figures_dir, "leg_allometries.png"),
   file.path(figures_dir, "head_leg_compensation.png"),
   file.path(figures_dir, "ear_body_adjusted_means.png"),
-  file.path(figures_dir, "eye_body_adjusted_means.png"),
-  file.path(repeatability_dir, "measurement_repeatability_robustness.csv"),
-  file.path(repeatability_dir, "measurement_round_effects.csv"),
-  file.path(repeatability_dir, "measurement_round_pairwise_diagnostics.csv"),
-  file.path(repeatability_dir, "measurement_order_effects.csv")
+  file.path(figures_dir, "eye_body_adjusted_means.png")
 )
 
 missing_files <- required_files[!file.exists(required_files)]
@@ -241,20 +230,6 @@ read_result <- function(filename) {
     )
 }
 
-read_repeatability_result <- function(filename) {
-  readr::read_csv(
-    file.path(repeatability_dir, filename),
-    show_col_types = FALSE
-  )
-}
-
-format_text_list <- function(x) {
-  if (length(x) == 0) return("")
-  if (length(x) == 1) return(x)
-  if (length(x) == 2) return(paste(x, collapse = " and "))
-  paste0(paste(x[-length(x)], collapse = ", "), " and ", x[length(x)])
-}
-
 fmt_num <- function(x, digits = 2) {
   formatC(x, format = "f", digits = digits)
 }
@@ -308,73 +283,6 @@ manuscript_table <- function(x, align = NULL) {
 
     for (j in seq_along(align)) {
       ft <- flextable::align(ft, j = j, align = align[[j]], part = "all")
-    }
-  }
-
-  ft
-}
-
-# Format Supplementary Table S1 for the portrait Word layout. The grouped
-# header and fixed column widths keep all model and agreement summaries on one
-# page-width table while preserving four-decimal repeatability estimates.
-supplementary_table <- function(
-    x,
-    widths,
-    align = NULL,
-    spanner_values = NULL,
-    spanner_widths = NULL
-) {
-  x <- normalize_table_labels(x)
-
-  grid_rule <- officer::fp_border(color = "#B7B7B7", width = 0.5)
-  outer_rule <- officer::fp_border(color = "#7F7F7F", width = 0.75)
-
-  ft <- flextable::flextable(x)
-
-  if (!is.null(spanner_values)) {
-    ft <- flextable::add_header_row(
-      ft,
-      values = spanner_values,
-      colwidths = spanner_widths,
-      top = TRUE
-    )
-  }
-
-  ft <- ft |>
-    flextable::font(fontname = "Times New Roman", part = "all") |>
-    flextable::fontsize(size = 8.5, part = "all") |>
-    flextable::bold(part = "header") |>
-    flextable::bg(bg = "#D9E2F3", part = "header") |>
-    flextable::border_remove() |>
-    flextable::border_outer(border = outer_rule, part = "all") |>
-    flextable::border_inner_h(border = grid_rule, part = "all") |>
-    flextable::border_inner_v(border = grid_rule, part = "all") |>
-    flextable::padding(padding = 2, part = "all") |>
-    flextable::valign(valign = "center", part = "all") |>
-    flextable::width(j = seq_along(widths), width = widths) |>
-    flextable::set_table_properties(
-      layout = "fixed",
-      width = 1,
-      opts_word = list(split = FALSE, repeat_headers = TRUE)
-    )
-
-  if (nrow(x) >= 2) {
-    ft <- flextable::bg(
-      ft,
-      i = seq(2, nrow(x), by = 2),
-      bg = "#F3F6F9",
-      part = "body"
-    )
-  }
-
-  if (!is.null(align)) {
-    for (j in seq_along(align)) {
-      ft <- flextable::align(
-        ft,
-        j = j,
-        align = align[[j]],
-        part = "all"
-      )
     }
   }
 
@@ -517,156 +425,6 @@ eye_local_slopes <- read_result("eye_local_integration_slopes.csv")
 
 ear_weapon_test   <- read_result("ear_weapon_covariance_model_test.csv")
 ear_weapon_slopes <- read_result("ear_weapon_covariance_slopes.csv")
-
-repeatability_all <- read_repeatability_result(
-  "measurement_repeatability_robustness.csv"
-)
-round_effects <- read_repeatability_result("measurement_round_effects.csv")
-round_pairwise <- read_repeatability_result(
-  "measurement_round_pairwise_diagnostics.csv"
-)
-order_effects <- read_repeatability_result("measurement_order_effects.csv")
-
-repeatability_primary <- repeatability_all |>
-  filter(model == "primary_unadjusted")
-
-repeatability_morph_adjusted <- repeatability_all |>
-  filter(model == "morph_adjusted")
-
-repeatability_morph_round_adjusted <- repeatability_all |>
-  filter(model == "morph_and_round_adjusted")
-
-primary_low <- repeatability_primary |> slice_min(R, n = 1, with_ties = FALSE)
-primary_high <- repeatability_primary |> slice_max(R, n = 1, with_ties = FALSE)
-morph_low <- repeatability_morph_adjusted |>
-  slice_min(R, n = 1, with_ties = FALSE)
-
-trait_labels <- c(
-  pronotum = "pronotum length",
-  head_length = "head length",
-  head_width = "head width",
-  forefemur = "forefemur length",
-  foretibia = "foretibia length",
-  ear = "ear area",
-  midfemur = "midfemur length",
-  midtibia = "midtibia length",
-  hindfemur = "hindfemur length",
-  hindtibia = "hindtibia length",
-  eye = "eye length"
-)
-
-supplement_trait_order <- c(
-  "pronotum",
-  "head_length",
-  "head_width",
-  "forefemur",
-  "foretibia",
-  "midfemur",
-  "midtibia",
-  "hindfemur",
-  "hindtibia",
-  "ear",
-  "eye"
-)
-
-repeatability_table_data <- repeatability_primary |>
-  select(
-    trait,
-    pooled_R = R,
-    pooled_lower = CI_lower,
-    pooled_upper = CI_upper
-  ) |>
-  left_join(
-    repeatability_morph_adjusted |>
-      select(
-        trait,
-        morph_R = R,
-        morph_lower = CI_lower,
-        morph_upper = CI_upper
-      ),
-    by = "trait"
-  ) |>
-  left_join(
-    repeatability_morph_round_adjusted |>
-      select(
-        trait,
-        morph_round_R = R,
-        morph_round_lower = CI_lower,
-        morph_round_upper = CI_upper
-      ),
-    by = "trait"
-  ) |>
-  left_join(
-    round_effects |>
-      select(
-        trait,
-        relative_TEM_percent,
-        absolute_agreement_ICC_A1,
-        max_absolute_pairwise_bias_percent,
-        round_P_Holm
-      ),
-    by = "trait"
-  ) |>
-  mutate(
-    trait = factor(trait, levels = supplement_trait_order),
-    Trait = stringr::str_to_sentence(
-      unname(trait_labels[as.character(trait)])
-    ),
-    Pooled = sprintf(
-      "%.4f\n(%.4f\u2013%.4f)", pooled_R, pooled_lower, pooled_upper
-    ),
-    `Morph-adjusted` = sprintf(
-      "%.4f\n(%.4f\u2013%.4f)", morph_R, morph_lower, morph_upper
-    ),
-    `Morph + round` = sprintf(
-      "%.4f\n(%.4f\u2013%.4f)",
-      morph_round_R,
-      morph_round_lower,
-      morph_round_upper
-    ),
-    `rTEM (%)` = sprintf("%.2f", relative_TEM_percent),
-    `ICC(A,1)` = sprintf("%.4f", absolute_agreement_ICC_A1),
-    `Max. bias (%)` = sprintf(
-      "%.2f",
-      max_absolute_pairwise_bias_percent
-    ),
-    `Holm p` = if_else(
-      round_P_Holm < 0.001,
-      "<0.001",
-      sprintf("%.3f", round_P_Holm)
-    )
-  ) |>
-  arrange(trait) |>
-  select(
-    Trait,
-    Pooled,
-    `Morph-adjusted`,
-    `Morph + round`,
-    `rTEM (%)`,
-    `ICC(A,1)`,
-    `Max. bias (%)`,
-    `Holm p`
-  )
-
-round_supported <- round_effects |>
-  filter(round_P_Holm < alpha)
-
-round_supported_text <- format_text_list(
-  unname(trait_labels[round_supported$trait])
-)
-
-round_relative_TEM_min <- min(round_effects$relative_TEM_percent)
-round_relative_TEM_max <- max(round_effects$relative_TEM_percent)
-round_ICC_min <- min(round_effects$absolute_agreement_ICC_A1)
-round_ICC_max <- max(round_effects$absolute_agreement_ICC_A1)
-round_max_Holm_P <- max(round_supported$round_P_Holm)
-max_pairwise_bias_percent <- max(abs(round_pairwise$bias_percent))
-max_non_ear_bias_percent <- round_pairwise |>
-  filter(trait != "ear") |>
-  summarise(value = max(abs(bias_percent))) |>
-  pull(value)
-min_signed_order_q <- min(order_effects$signed_slope_P_BH)
-min_absolute_order_q <- min(order_effects$absolute_error_slope_P_BH)
 
 # ── Sample and body-size summaries ───────────────────────────────────────────
 get_group_row <- function(group_name) {
@@ -857,6 +615,10 @@ eye_local_n_positive <- sum(eye_local_slopes$lower.CL > 0, na.rm = TRUE)
 ear_weapon_female <- ear_weapon_slopes |> filter(.data$group == "female")
 ```
 
+# Abstract
+
+Alternative mating strategies are often defined by differences in weaponry, but they may also involve coordinated changes in locomotory and sensory traits. We tested whether such traits form integrated strategy-specific phenotypes in Wellington tree wētā (*Hemideina crassidens*), whose males mature as genetically polymorphic eighth-, ninth- or tenth-instar morphs that differ in weapon size and mating behaviour. Using 304 field-collected adults, we compared the body-size-adjusted lengths and allometries of all three leg pairs, eye length and tympanic organ area among females and the three male morphs. We also tested whether weapon size covaried with locomotory and sensory investment within groups. At a common body size, relative leg length generally increased from eighth- to tenth-instar males across all leg pairs, with ninth-instar males intermediate. Tenth-instar males also showed greater anterior leg allocation than females, although anterior–posterior allocation differed little among male morphs. Eye and tympanic organ dimensions followed the same male morph gradient: tenth-instar males had the largest sensory structures and eighth-instar males the smallest. These patterns contradicted the prediction that small, actively searching males would invest most in locomotion and sensory detection. Relative weapon size was positively associated with leg length in nearly every group-by-leg combination, providing no evidence of a weapon–locomotion trade-off. In contrast, sensory traits remained strongly integrated with their local anatomical substrates but tympanic organ area was only weakly associated with weapon size within male morphs. Alternative mating strategies in Wellington tree wētā therefore comprise a mosaic of coordinated divergence, conserved local integration and partial trait decoupling, rather than uniformly integrated whole-organism phenotypes.
+
 # Introduction
 
 Alternative mating strategies allow males to achieve reproductive success through divergent solutions to competition for mates. In many species, large or well-armed males defend females or reproductive resources, whereas smaller males avoid direct contests and obtain matings through sneaking, satellite behaviour or active searching [@gross1996; @shuster2003; @oliveira2008]. These strategies are frequently associated with conspicuous differences in body size and weaponry, but alternative male phenotypes can differ in many additional aspects of morphology, physiology, behaviour and life history. They are therefore better understood as integrated phenotypes than as otherwise similar males differing only in the exaggerated trait used to classify them [@west-eberhard2003]. Selection should favour coordinated combinations of traits that facilitate the behaviour and ecological circumstances associated with each strategy.
@@ -869,11 +631,12 @@ Locomotor and sensory traits should be especially relevant to alternative mating
 
 The Wellington tree wētā, *Hemideina crassidens*, provides an opportunity to address this question. This flightless, nocturnal orthopteran is harem-polygynous, and females shelter communally in cavities in trees, hereafter galleries. Males use their enlarged heads and mandibles as weapons in contests for control of female-occupied galleries, and males with larger weapons generally have an advantage during escalated fights [@kelly2005a; @kelly2006d; @kelly2010]. Males express three genetically polymorphic, irreversible morphotypes through maturation at the eighth, ninth or tenth juvenile instar [@nason2020; @kelly2024]. Large tenth-instar males possess the most exaggerated weaponry and commonly fight for control of galleries. Small eighth-instar males possess much smaller weapons and may circumvent larger defenders to obtain copulations or search vegetation for undefended females, whereas ninth-instar males exhibit an intermediate strategy that combines fighting and sneaking depending on the social context [@wilson2019; @kelly2025]. The three strategies attain similar average reproductive fitness, consistent with their maintenance as a balanced polymorphism [@nason2020].
 
-Here, I tested whether these alternative male morphotypes differ in the relative expression and allometric scaling of locomotor and sensory traits. I measured the lengths of the fore-, mid- and hindlegs as indices of locomotor morphology, and I measured eye size and the area of the tympanal ears on the foretibiae as indices of visual and auditory investment. Females were included as a non-morphotypic reference group that shares the species’ general locomotor and sensory requirements but does not use enlarged mandibles in competition for mates. I asked whether the three leg pairs show a common pattern of allocation among groups or whether particular groups disproportionately invest in specific legs, and whether any anterior-posterior shift in allocation accompanies strategy divergence. I also tested whether weapon size is positively integrated with, negatively associated with, or independent of locomotory and sensory investment within groups—a comparison that directly distinguishes positive integration from resource trade-offs and developmental decoupling.
+Here, we tested whether these alternative male morphotypes differ in the relative expression and allometric scaling of locomotor and sensory traits. We measured the lengths of the fore-, mid- and hindlegs as indices of locomotor morphology, and we measured eye size and the area of the tympanal ears on the foretibiae as indices of visual and auditory investment. Females were included as a non-morphotypic reference group that shares the species’ general locomotor and sensory requirements but does not use enlarged mandibles in competition for mates. We asked whether the three leg pairs show a common pattern of allocation among groups or whether particular groups disproportionately invest in specific legs, and whether any anterior-posterior shift in allocation accompanies strategy divergence. We also tested whether weapon size is positively integrated with, negatively associated with, or independent of locomotory and sensory investment within groups—a comparison that directly distinguishes positive integration from resource trade-offs and developmental decoupling.
 
-To my knowledge, this study is the first to examine locomotory and sensory morphology jointly across females and every male morphotype in a trimorphic insect expressing genetically polymorphic alternative mating strategies. Previous studies have generally considered a limited set of weapon-associated traits, often in male-dimorphic systems, and have rarely combined body-size-adjusted comparisons with analyses of allometric scaling and within-morph covariance. By integrating body-size-adjusted trait comparisons, group-specific allometry, anterior–posterior leg allocation, local anatomical integration and within-group weapon–trait covariance, my framework distinguishes morphological divergence among strategies from developmental integration within them. Because morph identity in *H. crassidens* is genetically polymorphic rather than induced by nutritional condition, comparisons among morphs are also less confounded by condition-dependent morph expression than in many polyphenic systems. This multilevel approach allows me to test whether alternative strategies represent broadly coordinated phenotypes or mosaics of trait-specific modification.
+To our knowledge, this study is the first to examine locomotory and sensory morphology jointly across females and every male morphotype in a trimorphic insect expressing genetically polymorphic alternative mating strategies. Previous studies have generally considered a limited set of weapon-associated traits, often in male-dimorphic systems, and have rarely combined body-size-adjusted comparisons with analyses of allometric scaling and within-morph covariance. By integrating body-size-adjusted trait comparisons, group-specific allometry, anterior–posterior leg allocation, local anatomical integration and within-group weapon–trait covariance, our framework distinguishes morphological divergence among strategies from developmental integration within them. Because morph identity in *H. crassidens* is genetically polymorphic rather than induced by nutritional condition, comparisons among morphs are also less confounded by condition-dependent morph expression than in many polyphenic systems. This multilevel approach allows us to test whether alternative strategies represent broadly coordinated phenotypes or mosaics of trait-specific modification.
 
-Two competing outcomes are possible. Under a searching and detection hypothesis, eighth-instar males—which locate mates by patrolling vegetation and circumventing gallery defenders—should face greater locomotory and sensory demands than their gallery-defending counterparts. If morphology tracks these demands, eighth-instar males should possess relatively longer legs and larger sensory structures at a common body size, and weapon size within groups should be decoupled from or negatively associated with locomotory and sensory investment. Under a positive-integration hypothesis, the morphotypic differences in weapon size reflect broader variation in developmental resources or overall phenotypic quality, such that conventional tenth-instar males simultaneously express larger weapons, longer legs, and greater sensory investment. On this view, weapon size within groups should be positively integrated with supporting structures regardless of morph identity. These two hypotheses generate opposite predictions for which morph leads in relative locomotory and sensory investment, and for the sign of within-group weapon–trait covariance. Ninth-instar males were expected to be intermediate or more generalized, consistent with their flexible combination of fighting and sneaking. More broadly, group-specific allometric slopes would indicate that trait expression scales differently with body size among morphotypes, whereas differences in elevation with common slopes would indicate proportional shifts in relative investment. By testing these predictions simultaneously across locomotory and sensory traits, I ask whether the alternative mating strategies of *H. crassidens* are expressed as broadly integrated phenotypes or as a mosaic of trait-specific adjustments.
+Two competing outcomes are possible. Under a searching and detection hypothesis, eighth-instar males—which locate mates by patrolling vegetation and circumventing gallery defenders—should face greater locomotory and sensory demands than their gallery-defending counterparts. If morphology tracks these demands, eighth-instar males should possess relatively longer legs and larger sensory structures at a common body size, and weapon size within groups should be decoupled from or negatively associated with locomotory and sensory investment. Under a positive-integration hypothesis, the morphotypic differences in weapon size reflect broader variation in developmental resources or overall phenotypic quality, such that conventional tenth-instar males simultaneously express larger weapons, longer legs, and greater sensory investment. On this view, weapon size within groups should be positively integrated with supporting structures regardless of morph identity. These two hypotheses generate opposite predictions for which morph leads in relative locomotory and sensory investment, and for the sign of within-group weapon–trait covariance. Ninth-instar males were expected to be intermediate or more generalized, consistent with their flexible combination of fighting and sneaking. More broadly, group-specific allometric slopes would indicate that trait expression scales differently with body size among morphotypes, whereas differences in elevation with common slopes would indicate proportional shifts in relative investment. By testing these predictions simultaneously across locomotory and sensory traits, we ask whether the alternative mating strategies of H. crassidens are expressed as broadly integrated phenotypes or as a mosaic of trait-specific adjustments.
+
 
 # Methods
 
@@ -883,12 +646,10 @@ Adult Wellington tree wētā, *Hemideina crassidens*, were haphazardly collected
 
 Adult males were assigned to eighth-, ninth- or tenth-instar morphotypes from their head lengths following @kelly2010 and @kelly2026. The later parameters were derived from a trimodal mixture model of male head length [@kelly2026].
 
-Following collection, individuals were euthanized by freezing at −20 °C. Each specimen was subsequently dissected to remove the head, pronotum, both forelegs, both midlegs and both hindlegs. All structures dissected from an individual were placed together in a labelled screw-cap tube to preserve their association with the individual's unique identifier.
+Following collection, individuals were euthanized by freezing at $-20\,^{\circ}\mathrm{C}$. Each specimen was subsequently dissected to remove the head, pronotum, both forelegs, both midlegs and both hindlegs. All structures dissected from an individual were placed together in a labelled screw-cap tube to preserve their association with the individual's unique identifier.
 
-```{=html}
 <!-- Add collection-permit and institutional animal-care information here,
 if required by the journal. -->
-```
 
 ## Digital imaging and morphological measurements
 
@@ -900,17 +661,19 @@ The measured linear traits were pronotum length, head length, head width, eye le
 
 ## Measurement repeatability
 
+<!-- Retain this subsection after completing the repeatability assessment.
+The wording below assumes that 48 specimens are remeasured twice in addition
+to the original measurement. -->
+
 Measurement repeatability was assessed using 48 individuals selected by stratified random sampling. Four individuals were selected from each of the 12 combinations of collection year and sex or morph group: females and eighth-, ninth- and tenth-instar males in each of the three collection years. Every trait was remeasured twice from the original images, yielding three measurements per trait when the original measurement was included. Image order was randomized independently for each measurement round, and previous measurements were not consulted during remeasurement.
 
-Repeatability was estimated separately for each trait using Gaussian linear mixed-effects models with individual identity as a random intercept. The primary, pooled model contained no fixed effects, and the intraclass correlation coefficient was calculated as the proportion of total variance attributable to differences among individuals:
+Repeatability was estimated separately for each trait using a linear mixed-effects model containing individual identity as a random intercept and no fixed effects. The intraclass correlation coefficient was calculated as the proportion of total variance attributable to differences among individuals:
 
-$$R =
+$$
+R =
 \frac{V_{\mathrm{individual}}}
-     {V_{\mathrm{individual}} + V_{\mathrm{residual}}}.$$
-
-Repeatability models and bootstrap confidence intervals were fitted using **rptR** [@stoffel2017]. Ninety-five per cent confidence intervals were obtained from 1,000 parametric bootstrap replicates. Because females and the three male morphs differ substantially in mean morphology, each analysis was repeated with morph included as a fixed effect. These adjusted estimates quantify repeatability among individuals after removing average differences among morphs. A further model included both morph and measurement round as fixed effects to estimate consistency after accounting for systematic session differences.
-
-Systematic differences among measurement sessions were tested using a linear mixed-effects model containing measurement round as a three-level fixed effect and individual identity as a random intercept. Omnibus round-effect p-values were adjusted across the 11 traits using both Benjamini--Hochberg and Holm procedures, with the more conservative Holm-adjusted results used in the text. Pairwise bias was calculated as the mean within-individual difference between a later and an earlier round. Pairwise technical error of measurement was calculated as $\sqrt{\sum d_i^2/(2n)}$, where $d_i$ is the within-individual difference. Overall technical error across the three rounds was the pooled within-individual standard deviation, and relative technical error was calculated as 100 times the technical error divided by the trait mean. Absolute agreement was also summarized using the two-way, single-measure ICC(A,1) among individuals with complete measurements in all three rounds. To test for drift within remeasurement sessions, signed and absolute deviations from the original measurement were regressed on randomized measurement position; these p-values were Benjamini--Hochberg adjusted separately for signed and absolute deviations.
+     {V_{\mathrm{individual}} + V_{\mathrm{residual}}}.
+$$
 
 ## Statistical analysis
 
@@ -918,21 +681,25 @@ All analyses were conducted in R [@rcoreteam2025]. Data preparation and visualiz
 
 Females and eighth-, ninth- and tenth-instar males were represented by the four levels of a categorical variable termed `group`. Pronotum length was used as the measure of structural body size. Composite head size was calculated as the geometric mean of head length and head width:
 
-$$\mathrm{head\ size}
+$$
+\mathrm{head\ size}
 =
 \sqrt{
   \mathrm{head\ length}
   \times
   \mathrm{head\ width}
-}.$$
+}.
+$$
 
 Because ear size was measured as an area, its square root was taken to express it as a linear dimension before analysis. All continuous morphological variables were then transformed using natural logarithms. Allometric slopes from these log--log models can therefore be interpreted as allometric exponents.
 
 Log pronotum length was centred on a pronotum length of 7.2 mm:
 
-$$\log P_c
+$$
+\log P_c
 =
-\log(\mathrm{pronotum})-\log(7.2).$$
+\log(\mathrm{pronotum})-\log(7.2).
+$$
 
 This reference value lay within the range of pronotum lengths shared by all four groups. Model intercepts and estimated marginal means at $\log P_c=0$ therefore describe individuals with a pronotum length of 7.2 mm and represent interpolation rather than extrapolation.
 
@@ -942,25 +709,31 @@ Before fitting the models, the data were checked for duplicate individual identi
 
 Allometric relationships for the forelegs, midlegs and hindlegs were initially examined separately using ordinary least-squares models. For each leg pair, a common-slope model,
 
-$$\log(\mathrm{leg\ length})
+$$
+\log(\mathrm{leg\ length})
 \sim
-\log P_c+\mathrm{group},$$
+\log P_c+\mathrm{group},
+$$
 
 was compared with a model allowing group-specific slopes,
 
-$$\log(\mathrm{leg\ length})
+$$
+\log(\mathrm{leg\ length})
 \sim
-\log P_c\times\mathrm{group}.$$
+\log P_c\times\mathrm{group}.
+$$
 
 Partial $F$-tests comparing the nested models were used to determine whether allometric slopes differed among groups. Group-specific allometric slopes and pairwise differences among slopes were estimated using `emtrends()`.
 
 The primary test of relative locomotory allocation used a repeated-trait linear mixed-effects model. Foreleg, midleg and hindleg measurements were arranged in long format so that each individual contributed as many as three observations. Log leg length was modelled as
 
-$$\log(\mathrm{leg\ length})
+$$
+\log(\mathrm{leg\ length})
 \sim
 \log P_c\times\mathrm{group}\times\mathrm{leg}
 +
-(1|\mathrm{individual}).$$
+(1|\mathrm{individual}).
+$$
 
 Individual identity was included as a random intercept to account for the nonindependence of the three leg measurements from the same specimen. The model was fitted by maximum likelihood. Fixed effects were evaluated using type III tests with Satterthwaite approximations to the denominator degrees of freedom. The three-way interaction tested whether group differences in allometric slope depended on leg identity.
 
@@ -968,9 +741,9 @@ Estimated marginal means were calculated separately for each leg pair at a prono
 
 All pairwise group comparisons were calculated within each leg pair. Three biologically motivated contrasts were also evaluated:
 
-1.  eighth-instar versus tenth-instar males;
-2.  ninth-instar males versus the midpoint of eighth- and tenth-instar males; and
-3.  tenth-instar males versus females.
+1. eighth-instar versus tenth-instar males;
+2. ninth-instar males versus the midpoint of eighth- and tenth-instar males; and
+3. tenth-instar males versus females.
 
 Additional difference-in-differences contrasts tested whether group differences varied between the foreleg and hindleg, between the midleg and hindleg, and between the mean of the two anterior leg pairs and the hindleg. These contrasts tested differences in relative anterior--posterior allocation rather than differences in absolute leg length alone.
 
@@ -980,15 +753,19 @@ As secondary analyses, each total-leg pattern was decomposed into its femur and 
 
 Relative head size was estimated using residuals from a group-specific allometric model:
 
-$$\log(\mathrm{head\ size})
+$$
+\log(\mathrm{head\ size})
 \sim
-\log P_c\times\mathrm{group}.$$
+\log P_c\times\mathrm{group}.
+$$
 
 The residual for an individual indicates whether its head was larger or smaller than expected for its pronotum size and group. Relative foretibia size was calculated analogously from the model
 
-$$\log(\mathrm{foretibia})
+$$
+\log(\mathrm{foretibia})
 \sim
-\log P_c\times\mathrm{group}.$$
+\log P_c\times\mathrm{group}.
+$$
 
 These residual indices separate within-group variation in relative trait size from the large differences in absolute morphology among females and the three male morphotypes.
 
@@ -996,10 +773,17 @@ These residual indices separate within-group variation in relative trait size fr
 
 The secondary sexual trait compensation hypothesis predicts that individuals possessing relatively large heads or weapons should also possess relatively large supporting structures. This prediction was tested by extending the joint leg model to include relative head size:
 
-$$\log(\mathrm{leg\ length}) \sim
-\log P_c\times\mathrm{group}\times\mathrm{leg}
-+ \mathrm{relative\ head\ size}\times\mathrm{group}\times\mathrm{leg}
-+ (1\mid\mathrm{individual}).$$
+$$
+\begin{aligned}
+\log(\mathrm{leg\ length}) \sim\;&
+\log P_c\times\mathrm{group}\times\mathrm{leg}\\
+&+
+\mathrm{relative\ head\ size}
+\times\mathrm{group}\times\mathrm{leg}\\
+&+
+(1|\mathrm{individual}).
+\end{aligned}
+$$
 
 Group- and leg-specific slopes relating leg length to relative head size were estimated using `emtrends()`. Slopes were compared among groups within each leg pair and among leg pairs within each group. A positive slope was interpreted as phenotypic integration consistent with secondary sexual trait compensation, a negative slope as evidence of a morphological trade-off, and a slope close to zero as evidence of developmental decoupling.
 
@@ -1007,17 +791,21 @@ Group- and leg-specific slopes relating leg length to relative head size were es
 
 Group differences in ear and eye investment were examined at a common structural body size. Log linearized ear size and log eye length were each modelled as functions of log pronotum length, group and their interaction:
 
-$$\log(\mathrm{sensory\ trait})
+$$
+\log(\mathrm{sensory\ trait})
 \sim
-\log P_c\times\mathrm{group}.$$
+\log P_c\times\mathrm{group}.
+$$
 
 For each sensory trait, a common-slope model was compared with the group-specific-slope model using a nested-model $F$-test. Group-specific allometric slopes were estimated using `emtrends()`, and estimated marginal means were calculated at a pronotum length of 7.2 mm.
 
 Eye estimates were exponentiated to return them to the original length scale. For the ear, estimated marginal means on the log-linearized scale were transformed back to the original area scale as
 
-$$\widehat{\mathrm{ear\ area}}
+$$
+\widehat{\mathrm{ear\ area}}
 =
-\exp(2\widehat{\mu}),$$
+\exp(2\widehat{\mu}),
+$$
 
 where $\widehat{\mu}$ is the predicted log linearized ear size. Contrasts in linearized ear size were squared after exponentiation to obtain ratios on the area scale.
 
@@ -1025,47 +813,61 @@ where $\widehat{\mu}$ is the predicted log linearized ear size. Contrasts in lin
 
 Local integration of the ear with the foretibia was tested using relative foretibia size. The full model was
 
-$$\log(\mathrm{linearized\ ear\ size}) \sim
-\log P_c\times\mathrm{group}
-+ \mathrm{relative\ foretibia\ size}\times\mathrm{group}.$$
+$$
+\begin{aligned}
+\log(\mathrm{linearized\ ear\ size}) \sim\;&
+\log P_c\times\mathrm{group}\\
+&+
+\mathrm{relative\ foretibia\ size}
+\times\mathrm{group}.
+\end{aligned}
+$$
 
 This model tested whether individuals having a larger foretibia than expected for their body size and group also had a relatively larger ear. A reduced model containing a common relative-foretibia slope was compared with the full model using a nested-model $F$-test.
 
 Eye--head integration was tested using the corresponding model
 
-$$\log(\mathrm{eye\ length}) \sim
-\log P_c\times\mathrm{group}
-+ \mathrm{relative\ head\ size}\times\mathrm{group}.$$
+$$
+\begin{aligned}
+\log(\mathrm{eye\ length}) \sim\;&
+\log P_c\times\mathrm{group}\\
+&+
+\mathrm{relative\ head\ size}
+\times\mathrm{group}.
+\end{aligned}
+$$
 
 A positive relationship between eye length and relative head size was interpreted as developmental integration, a negative relationship as evidence of a head--eye trade-off, and a relationship close to zero as evidence of developmental decoupling.
 
 An additional model tested direct covariance between weapon and ear investment:
 
-$$\log(\mathrm{linearized\ ear\ size}) \sim
-\log P_c\times\mathrm{group}
-+ \mathrm{relative\ head\ size}\times\mathrm{group}.$$
+$$
+\begin{aligned}
+\log(\mathrm{linearized\ ear\ size}) \sim\;&
+\log P_c\times\mathrm{group}\\
+&+
+\mathrm{relative\ head\ size}
+\times\mathrm{group}.
+\end{aligned}
+$$
 
 A negative slope was considered consistent with a weapon--sensory trade-off, whereas a positive slope indicated phenotypic integration and a slope close to zero indicated developmental decoupling.
 
 ### Contrasts and statistical inference
 
-Estimated marginal means and trends are presented with 95% confidence intervals. Kenward--Roger approximations were used for degrees of freedom associated with mixed-model estimated marginal means and contrasts. Pairwise and planned contrasts were corrected using Holm's sequential procedure within each defined family of tests. Statistical significance was evaluated at α = 0.05, but interpretation also considered estimated effect sizes, confidence intervals and the biological direction of each relationship.
+Estimated marginal means and trends are presented with 95% confidence intervals. Kenward--Roger approximations were used for degrees of freedom associated with mixed-model estimated marginal means and contrasts. Pairwise and planned contrasts were corrected using Holm's sequential procedure within each defined family of tests. Statistical significance was evaluated at $\alpha=0.05$, but interpretation also considered estimated effect sizes, confidence intervals and the biological direction of each relationship.
 
 ### Model diagnostics
 
 Model assumptions were evaluated using graphical checks of residual normality, homogeneity of variance and relationships between residuals and fitted values. Multicollinearity was assessed using variance-inflation diagnostics. Observations were flagged for further inspection when Cook's distance exceeded $4/n$, leverage exceeded $2p/n$, or the absolute standardized residual exceeded 3, where $n$ was the model sample size and $p$ was the number of estimated coefficients. These thresholds were used only as diagnostic screening criteria and did not result in the automatic deletion of observations.
 
+
 # Results
-
-## Measurement repeatability
-
-Repeatability was high for all 11 traits. Pooled estimates ranged from $R = `r fmt_num(primary_low$R, 3)`$ for `r unname(trait_labels[primary_low$trait])` (95% CI `r fmt_num(primary_low$CI_lower, 3)`--`r fmt_num(primary_low$CI_upper, 3)`) to $R = `r fmt_num(primary_high$R, 4)`$ for `r unname(trait_labels[primary_high$trait])` (95% CI `r fmt_num(primary_high$CI_lower, 4)`--`r fmt_num(primary_high$CI_upper, 4)`). Estimates remained high after morph was included as a fixed effect ($R = `r fmt_num(min(repeatability_morph_adjusted$R), 3)`$--$`r fmt_num(max(repeatability_morph_adjusted$R), 3)`$); `r unname(trait_labels[morph_low$trait])` again had the lowest estimate ($R = `r fmt_num(morph_low$R, 3)`$, 95% CI `r fmt_num(morph_low$CI_lower, 3)`--`r fmt_num(morph_low$CI_upper, 3)`). The high pooled estimates therefore did not depend only on the large mean differences among females and the three male morphs.
-
-A measurement-round effect remained supported after Holm adjustment for `r nrow(round_supported)` traits: `r round_supported_text` (all Holm-adjusted $p \leq `r fmt_num(round_max_Holm_P, 3)`$). The shifts were small in magnitude. Overall relative technical error ranged from `r fmt_num(round_relative_TEM_min, 2)`% to `r fmt_num(round_relative_TEM_max, 2)`%, and absolute-agreement ICC(A,1) values ranged from `r fmt_num(round_ICC_min, 4)` to `r fmt_num(round_ICC_max, 4)`. The largest pairwise bias was `r fmt_num(max_pairwise_bias_percent, 3)`% for ear area; the maximum absolute bias for every other trait was no greater than `r fmt_num(max_non_ear_bias_percent, 3)`%. Randomized measurement position was unrelated to either signed error (minimum Benjamini--Hochberg-adjusted $p = `r fmt_num(min_signed_order_q, 3)`$) or absolute error (minimum adjusted $p = `r fmt_num(min_absolute_order_q, 3)`$). Thus, several traits showed slight session-specific shifts, but measurement error was small and absolute agreement remained high across rounds.
 
 ## Sample composition and body-size overlap
 
 The analysis included `r total_n` individuals: `r female_desc$n` females, `r eighth_desc$n` eighth-instar males, `r ninth_desc$n` ninth-instar males, and `r tenth_desc$n` tenth-instar males. Mean pronotum length was `r fmt_num(female_desc$pronotum_mean, 2)` ± `r fmt_num(female_desc$pronotum_sd, 2)` mm in females, `r fmt_num(eighth_desc$pronotum_mean, 2)` ± `r fmt_num(eighth_desc$pronotum_sd, 2)` mm in eighth-instar males, `r fmt_num(ninth_desc$pronotum_mean, 2)` ± `r fmt_num(ninth_desc$pronotum_sd, 2)` mm in ninth-instar males, and `r fmt_num(tenth_desc$pronotum_mean, 2)` ± `r fmt_num(tenth_desc$pronotum_sd, 2)` mm in tenth-instar males. All four groups overlapped in pronotum length from `r fmt_num(common_body_size$common_lower, 2)` to `r fmt_num(common_body_size$common_upper, 2)` mm. The reference pronotum of `r fmt_num(common_body_size$reference_pronotum, 1)` mm used for size-adjusted comparisons therefore lay within the region of common support.
+
 
 ## Locomotory morphology
 
@@ -1079,17 +881,21 @@ The planned strategy contrasts revealed a consistent size gradient among the mal
 
 The anterior-posterior allocation analysis tested whether group differences were disproportionate across leg pairs. Among the three male morphs, allocation differences between eighth- and tenth-instar males and between ninth-instar males and the male midpoint were negligible (all Holm-adjusted p ≥ `r fmt_num(alloc_within_male_min_p, 3)`). However, tenth-instar males showed a significant anterior shift in allocation relative to females: the foreleg-to-hindleg ratio in tenth-instar males exceeded that of females by `r fmt_num(alloc_tenth_female_fore_hind$percent_difference, 1)`% (ratio of ratios = `r fmt_num(alloc_tenth_female_fore_hind$ratio_of_ratios, 2)`, Holm-adjusted `r fmt_p(alloc_tenth_female_fore_hind$p.value)`), and a comparable pattern was found for all three anterior-posterior allocation contrasts (all Holm-adjusted p ≤ `r fmt_num(max(alloc_tenth_female$p.value), 3)`). This indicates that the locomotory morphology of tenth-instar conventional males is disproportionately weighted toward the anterior leg pairs relative to females.
 
+
 ### Allometric variation
 
 Estimated allometric slopes were below one for all group-by-leg combinations, indicating negative allometry of leg length relative to pronotum length throughout. Tenth-instar males had the shallowest estimated slopes across all three leg pairs. After Holm correction within each leg, the clearest specific contrast was the hindleg slope difference between females and tenth-instar males (difference = `r fmt_num(hind_female_tenth$estimate, 3)`, `r fmt_p(hind_female_tenth$p.value)`). The exhaustive decomposition of the three-way interaction further showed that the female–eighth-instar slope contrast differed between forelegs and hindlegs (difference-in-differences = `r fmt_num(female_eighth_fore_hind$estimate, 3)`, `r fmt_p(female_eighth_fore_hind$p.value)`), meaning that females and eighth-instar males had nearly parallel foreleg allometries whereas their hindleg allometries were more divergent. Other corrected slope contrasts were not clearly supported.
+
 
 ### Femur and tibia components
 
 `r segment_result_text` These secondary analyses indicate which femur or tibia segments contributed to the group-level differences in total leg allometry.
 
+
 ## Weapon–leg integration
 
-To test whether relative weapon investment was positively integrated with leg size across groups—as predicted if weapon and locomotory traits are co-expressed rather than traded off—I extended the joint leg model to include relative head size (weapon size adjusted for pronotum length) as an additional covariate. The association was consistently positive: `r hl_n_positive` of `r hl_n_total` group-by-leg combinations had 95% confidence intervals entirely above zero, and no estimated slope was negative. The three-way interaction of group, leg, and relative head size was significant (`r fmt_f_anova(hl_int_row)`), indicating that the magnitude of weapon–leg integration varied across leg pairs and groups. The planned strategy slope contrasts, however, were `r ifelse(hl_strat_all_ns, "uniformly non-significant", "largely non-significant")` after Holm adjustment, meaning that no morph showed a weapon–leg integration profile that clearly differed from the others in the planned comparisons. Taken together, these results are consistent with positive phenotypic integration between weapon and leg investment, with no evidence of a negative trade-off.
+To test whether relative weapon investment was positively integrated with leg size across groups—as predicted if weapon and locomotory traits are co-expressed rather than traded off—we extended the joint leg model to include relative head size (weapon size adjusted for pronotum length) as an additional covariate. The association was consistently positive: `r hl_n_positive` of `r hl_n_total` group-by-leg combinations had 95% confidence intervals entirely above zero, and no estimated slope was negative. The three-way interaction of group, leg, and relative head size was significant (`r fmt_f_anova(hl_int_row)`), indicating that the magnitude of weapon–leg integration varied across leg pairs and groups. The planned strategy slope contrasts, however, were `r ifelse(hl_strat_all_ns, "uniformly non-significant", "largely non-significant")` after Holm adjustment, meaning that no morph showed a weapon–leg integration profile that clearly differed from the others in the planned comparisons. Taken together, these results are consistent with positive phenotypic integration between weapon and leg investment, with no evidence of a negative trade-off.
+
 
 ## Sensory morphology
 
@@ -1099,15 +905,16 @@ Ear size (tympanic organ area) and eye length both differed significantly among 
 
 At a pronotum length of `r fmt_num(common_body_size$reference_pronotum, 1)` mm, tenth-instar males had tympanic organ areas that were `r fmt_num(ear_body_strat_tenth_female$area_percent_difference, 1)`% larger in area than females (Holm-adjusted `r fmt_p(ear_body_strat_tenth_female$p.value)`), while eighth-instar males had areas `r fmt_num(abs(ear_body_strat_eighth_tenth$area_percent_difference), 1)`% smaller than tenth-instar males (Holm-adjusted `r fmt_p(ear_body_strat_eighth_tenth$p.value)`). The ninth-instar intermediacy contrast was not significant (`r fmt_p(ear_body_strat_ninth_mid$p.value)`). Eye length showed a larger and more pronounced gradient: tenth-instar males had eyes `r fmt_num(eye_body_strat_tenth_female$percent_difference, 1)`% longer than females (Holm-adjusted `r fmt_p(eye_body_strat_tenth_female$p.value)`), while eighth-instar males had eyes `r fmt_num(abs(eye_body_strat_eighth_tenth$percent_difference), 1)`% shorter than tenth-instar males (Holm-adjusted `r fmt_p(eye_body_strat_eighth_tenth$p.value)`). Again, ninth-instar males were statistically intermediate (`r fmt_p(eye_body_strat_ninth_mid$p.value)`). In both sensory traits, the morph gradient—from eighth-instar to tenth-instar—paralleled the weapon-size gradient, with conventional tenth-instar males investing most in both sensory structures and sneak-mating eighth-instar males investing least.
 
+
 ### Local morphological integration
 
-I tested whether ear and eye size were locally integrated with the morphological structures they are most closely associated with—the foretibia (for the tympanic organ) and the head capsule (for compound eyes)—after removing group-specific body-size variation from both the sensory and predictor traits. Local integration slopes did not differ significantly among groups for either the ear–foretibia relationship (`r fmt_f_nested(ear_local_test)`) or the eye–head relationship (`r fmt_f_nested(eye_local_test)`). The 95% confidence interval was entirely above zero for `r ear_local_n_positive` of `r nrow(ear_local_slopes)` ear–foretibia slopes and `r eye_local_n_positive` of `r nrow(eye_local_slopes)` eye–head slopes, indicating broadly consistent local developmental coupling. The absence of supported group differences in these slopes suggests that the ear–foretibia and eye–head integration patterns are similar across the three mating strategies and females.
+We tested whether ear and eye size were locally integrated with the morphological structures they are most closely associated with—the foretibia (for the tympanic organ) and the head capsule (for compound eyes)—after removing group-specific body-size variation from both the sensory and predictor traits. Local integration slopes did not differ significantly among groups for either the ear–foretibia relationship (`r fmt_f_nested(ear_local_test)`) or the eye–head relationship (`r fmt_f_nested(eye_local_test)`). The 95% confidence interval was entirely above zero for `r ear_local_n_positive` of `r nrow(ear_local_slopes)` ear–foretibia slopes and `r eye_local_n_positive` of `r nrow(eye_local_slopes)` eye–head slopes, indicating broadly consistent local developmental coupling. The absence of supported group differences in these slopes suggests that the ear–foretibia and eye–head integration patterns are similar across the three mating strategies and females.
 
 The positive eye-head slope deserves particular interpretive attention: because the head capsule is the same structure that bears the mandibular weaponry, weapon size and eye size are necessarily measured on the same structure. Individuals with proportionally larger heads will tend to have larger eyes partly as a geometric consequence of head capsule size, independently of any allocation decision. The eye-head integration slopes (`r fmt_num(min(eye_local_slopes[[eye_local_trend_col]]), 2)`–`r fmt_num(max(eye_local_slopes[[eye_local_trend_col]]), 2)` across groups) should therefore be interpreted as reflecting structural rather than necessarily adaptive coupling between vision and weapon investment.
 
 ### Weapon–sensory covariance
 
-To directly test whether sensory investment was positively integrated with, traded off against, or decoupled from weapon investment, I regressed ear size on relative head size (weapon proxy, adjusted for body size) within each group. The group × weapon interaction for ear size was not significant (`r fmt_f_nested(ear_weapon_test)`), indicating a common relationship between weapon investment and ear investment across groups. The female weapon-ear slope was positive and clearly different from zero (`r fmt_num(ear_weapon_female[[ear_weapon_trend_col]], 3)`, 95% CI `r fmt_num(ear_weapon_female$lower.CL, 3)`–`r fmt_num(ear_weapon_female$upper.CL, 3)`, `r fmt_p(ear_weapon_female$p.value)`). Among the three male morphs, however, weapon-ear slopes ranged from `r fmt_num(min(ear_weapon_slopes[[ear_weapon_trend_col]][ear_weapon_slopes$group != "female"]), 3)` to `r fmt_num(max(ear_weapon_slopes[[ear_weapon_trend_col]][ear_weapon_slopes$group != "female"]), 3)` and none was individually significant at α = `r alpha` (all p ≥ `r fmt_num(min(ear_weapon_slopes$p.value[ear_weapon_slopes$group != "female"]), 3)`). This pattern—positive covariance in females, near-zero covariance in males—is consistent with developmental decoupling of ear investment from weapon investment within male morphs. There was no evidence of a trade-off (negative slope) in any group.
+To directly test whether sensory investment was positively integrated with, traded off against, or decoupled from weapon investment, we regressed ear size on relative head size (weapon proxy, adjusted for body size) within each group. The group × weapon interaction for ear size was not significant (`r fmt_f_nested(ear_weapon_test)`), indicating a common relationship between weapon investment and ear investment across groups. The female weapon-ear slope was positive and clearly different from zero (`r fmt_num(ear_weapon_female[[ear_weapon_trend_col]], 3)`, 95% CI `r fmt_num(ear_weapon_female$lower.CL, 3)`–`r fmt_num(ear_weapon_female$upper.CL, 3)`, `r fmt_p(ear_weapon_female$p.value)`). Among the three male morphs, however, weapon-ear slopes ranged from `r fmt_num(min(ear_weapon_slopes[[ear_weapon_trend_col]][ear_weapon_slopes$group != "female"]), 3)` to `r fmt_num(max(ear_weapon_slopes[[ear_weapon_trend_col]][ear_weapon_slopes$group != "female"]), 3)` and none was individually significant at α = `r alpha` (all p ≥ `r fmt_num(min(ear_weapon_slopes$p.value[ear_weapon_slopes$group != "female"]), 3)`). This pattern—positive covariance in females, near-zero covariance in males—is consistent with developmental decoupling of ear investment from weapon investment within male morphs. There was no evidence of a trade-off (negative slope) in any group.
 
 ## Model diagnostics
 
@@ -1115,7 +922,7 @@ Observed and model-predicted trait distributions corresponded closely. Residuals
 
 # Discussion
 
-Alternative mating strategies are expected to comprise coordinated combinations of traits that support different routes to reproductive success. My results provide qualified support for this view but show that morphological coordination in Wellington tree wētā is more complex than either of my original hypotheses predicted. The searching and detection hypothesis was not supported: at a common body size, eighth-instar males did not possess the longest legs or the largest sensory structures. Instead, relative leg length generally increased from eighth- to tenth-instar males, and the same morph gradient was especially clear for eye length and tympanic organ area. The positive-integration hypothesis received stronger support because weapon size covaried positively with leg length within nearly every group, with no evidence that exaggerated head size was associated with reduced locomotory morphology. However, this integration did not extend uniformly to sensory traits. Ear investment differed substantially among morphs but was only weakly related to relative weapon size within male morphs, while local ear–foretibia and eye–head integration was broadly conserved across groups. Alternative mating strategies in this species therefore appear to be expressed as a mosaic of trait-specific changes rather than as uniformly integrated whole-organism phenotypes.
+Alternative mating strategies are expected to comprise coordinated combinations of traits that support different routes to reproductive success. Our results provide qualified support for this view but show that morphological coordination in Wellington tree wētā is more complex than either of our original hypotheses predicted. The searching and detection hypothesis was not supported: at a common body size, eighth-instar males did not possess the longest legs or the largest sensory structures. Instead, relative leg length generally increased from eighth- to tenth-instar males, and the same morph gradient was especially clear for eye length and tympanic organ area. The positive-integration hypothesis received stronger support because weapon size covaried positively with leg length within nearly every group, with no evidence that exaggerated head size was associated with reduced locomotory morphology. However, this integration did not extend uniformly to sensory traits. Ear investment differed substantially among morphs but was only weakly related to relative weapon size within male morphs, while local ear–foretibia and eye–head integration was broadly conserved across groups. Alternative mating strategies in this species therefore appear to be expressed as a mosaic of trait-specific changes rather than as uniformly integrated whole-organism phenotypes.
 
 ## Locomotory divergence among mating strategies
 
@@ -1173,7 +980,7 @@ The most direct next step is to connect morphological allocation to performance 
 
 The alternative male strategies of Wellington tree wētā are not simply weapon morphs accompanied by uniformly scaled versions of the remaining phenotype. Relative leg and sensory dimensions generally increased along the eighth- to tenth-instar weapon gradient, but anterior–posterior leg allocation differed most clearly between tenth-instar males and females rather than among the male strategies. Weapon and leg investment were positively integrated within groups, providing no evidence of a simple morphological trade-off, whereas sensory structures retained strong local anatomical integration but were comparatively weakly associated with weapon variation within male morphs. These findings show that alternative mating phenotypes can combine coordinated divergence, conserved developmental relationships and partial trait decoupling within the same organism. Distinguishing differences among morph means from patterns of covariance within morphs is therefore essential for understanding how alternative mating strategies become embodied as integrated—or partially integrated—phenotypes.
 
-```{=html}
+
 <!--
 EDITORIAL NOTES FOR THE NEXT DRAFT
 1. Decide which tables remain in the main text and which move to supplementary material.
@@ -1185,7 +992,6 @@ EDITORIAL NOTES FOR THE NEXT DRAFT
    tenth - female; confirm this corresponds to the foreleg-to-hindleg ratio in the script.
 5. Integrate this Results section with the final Methods and Discussion.
 -->
-```
 
 # Availability of data and material
 
@@ -1221,7 +1027,6 @@ I thank Roxanne Chassé Bilodeau for trait photography.
 
 ::: {#refs}
 :::
-
 
 {{< pagebreak >}}
 
@@ -1375,36 +1180,3 @@ knitr::include_graphics(file.path(figures_dir, "ear_body_adjusted_means.png"))
 
 knitr::include_graphics(file.path(figures_dir, "eye_body_adjusted_means.png"))
 ```
-
-{{< pagebreak >}}
-
-# Supplementary material {.unnumbered}
-
-**Supplementary Table S1. Repeatability, agreement, and measurement-round diagnostics for 11 morphological traits measured three times.**
-
-```{r}
-#| label: repeatability-supplement-output
-
-repeatability_table_data |>
-  supplementary_table(
-    widths = c(0.95, 1.04, 1.04, 1.04, 0.48, 0.56, 0.56, 0.55),
-    align = c(
-      "left",
-      "center",
-      "center",
-      "center",
-      "center",
-      "center",
-      "center",
-      "center"
-    ),
-    spanner_values = c(
-      "",
-      "Repeatability, R (95% CI)",
-      "Agreement among rounds"
-    ),
-    spanner_widths = c(1, 3, 4)
-  )
-```
-
-*Note.* $R$ = individual-level ICC (95% CI from 1,000 bootstraps) for pooled, morph-adjusted, and morph + round models. rTEM = within-individual SD/mean × 100; ICC(A,1) = single-measure absolute agreement; maximum bias = largest round-pair bias (% of mean); $p$ = Holm-adjusted across traits. Estimates used 48 individuals (142--144 observations; 47--48 complete triplets). No order drift was detected (minimum Benjamini--Hochberg-adjusted $p$: 0.524 signed, 0.867 absolute).
