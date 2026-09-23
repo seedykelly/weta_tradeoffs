@@ -1,8 +1,0 @@
-"item","value"
-"run_completed_utc","2026-09-21 19:53:21 UTC"
-"input_file","/Users/uqam/.codex/.chatgpt-projects/g-p-6a1f19f199fc8191806d31bfdd7c3ded/sources/trait_data(5).csv"
-"input_md5","2d67b2d772f6f28b3cdf77c87b35b5fc"
-"output_directory","/Users/uqam/.codex/.chatgpt-projects/g-p-6a1f19f199fc8191806d31bfdd7c3ded/deliverables/weta_feedback_revision/analysis_outputs/weta_trait_analysis"
-"residual_randomizations","9999"
-"bootstrap_replicates","9999"
-"R_version","R version 4.4.2 (2024-10-31)"
