@@ -1,6 +1,0 @@
-component,observed_eigenvalue,parallel_95_eigenvalue,variance_percent,cumulative_percent,retained,trait_set,size_adjustment
-PC1,3.432546875281781,1.2383705922090706,68.65093750563558,68.65093750563558,TRUE,five_non_head_traits,group_specific_at_7.2_mm
-PC2,0.8152027719705802,1.120482245133101,16.304055439411595,84.95499294504718,FALSE,five_non_head_traits,group_specific_at_7.2_mm
-PC3,0.508471907527706,1.0371402763618063,10.169438150554114,95.1244310956013,FALSE,five_non_head_traits,group_specific_at_7.2_mm
-PC4,0.19955850476568174,0.9738011157542412,3.9911700953136324,99.11560119091493,FALSE,five_non_head_traits,group_specific_at_7.2_mm
-PC5,0.044219940454254134,0.905832246403774,0.8843988090850822,100.00000000000001,FALSE,five_non_head_traits,group_specific_at_7.2_mm

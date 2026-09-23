@@ -1,4 +1,0 @@
-"scenario","analysis_tier","primary_analysis","analysis_reason","analysis_space","trait_set"
-"standardized_head_excluded","primary",TRUE,"Head size is excluded because head length contributes to archived male morph assignment.","standardized_size_adjusted_SD","head_excluded_five_traits"
-"standardized_six","sensitivity",FALSE,"Adds head size to test whether inference depends on including the classification-linked weapon trait.","standardized_size_adjusted_SD","six_traits"
-"raw_log_six","sensitivity",FALSE,"Uses unstandardized log traits to test dependence on residual-SD standardization while retaining all six traits.","raw_log_linear_dimensions","six_traits"

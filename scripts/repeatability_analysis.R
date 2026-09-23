@@ -29,20 +29,37 @@ library(rptR)
 # 1. Paths
 # ============================================================
 
-raw_dir <- paste0(
-  "/Users/uqam/Documents/Research_Admin/research projects/",
-  "Trait compensation/data/raw/measurements"
-)
+args <- commandArgs(trailingOnly = TRUE)
 
-project_dir <- paste0(
-  "/Users/uqam/Documents/Research_Admin/research projects/",
-  "Trait compensation"
-)
+# Command-line usage:
+# Rscript repeatability_analysis.R [source_project_dir] [raw_measurement_dir]
+#   [clean_measurement_dir] [output_dir]
+# The repeat-measurement images and measurement-order file are not part of the
+# manuscript archive, so their parent project must be supplied when the default
+# path is unavailable.
+project_dir <- if (length(args) >= 1L) {
+  args[[1L]]
+} else {
+  "/Users/uqam/Documents/Research_Admin/research projects/Trait compensation"
+}
 
-clean_dir <- paste0(
-  "/Users/uqam/Documents/Research_Admin/research projects/",
-  "Trait compensation/data/clean/measurements"
-)
+raw_dir <- if (length(args) >= 2L) {
+  args[[2L]]
+} else {
+  file.path(project_dir, "data", "raw", "measurements")
+}
+
+clean_dir <- if (length(args) >= 3L) {
+  args[[3L]]
+} else {
+  file.path(project_dir, "data", "clean", "measurements")
+}
+
+output_dir_argument <- if (length(args) >= 4L) {
+  args[[4L]]
+} else {
+  "analysis_outputs/repeatability"
+}
 
 na_vals <- c("", "NA", "NaN", "-", "N/A")
 
@@ -52,7 +69,7 @@ na_vals <- c("", "NA", "NaN", "-", "N/A")
 # ============================================================
 
 rep_metadata <- read_csv(
-  file.path(project_dir, "weta_repeatability_measurement_order.csv"),
+  file.path(raw_dir, "weta_repeatability_measurement_order.csv"),
   show_col_types = FALSE
 )
 
@@ -969,7 +986,7 @@ print(repeatability_summary, n = Inf)
 
 output_dir <- Sys.getenv(
   "WETA_REPEATABILITY_OUTPUT_DIR",
-  unset = file.path(project_dir, "analysis_outputs")
+  unset = output_dir_argument
 )
 dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
 
