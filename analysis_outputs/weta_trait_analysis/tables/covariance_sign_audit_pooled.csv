@@ -1,0 +1,2 @@
+analysis,n_groups,n_pairwise_total,n_negative,n_positive,proportion_positive,minimum_correlation,maximum_correlation,mean_correlation_min,mean_correlation_max,n_individuals_total,source_table
+Covariance sign audit,4,40,0,40,1,0.04866822303544417,0.9016907771911912,0.45272018872436803,0.5224789691285711,311,group_trait_correlations.csv

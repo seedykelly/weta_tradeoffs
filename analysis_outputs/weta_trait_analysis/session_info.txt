@@ -16,31 +16,38 @@ attached base packages:
 [1] stats     graphics  grDevices utils     datasets  methods   base     
 
 other attached packages:
- [1] broom_1.0.12       see_0.13.0         performance_0.16.0 lmerTest_3.2-0    
- [5] lme4_1.1-38        Matrix_1.7-1       car_3.1-5          carData_3.0-6     
- [9] emmeans_2.0.1      lubridate_1.9.5    forcats_1.0.1      stringr_1.6.0     
-[13] dplyr_1.2.0        purrr_1.2.1        readr_2.1.6        tidyr_1.3.2       
-[17] tibble_3.3.1       ggplot2_4.0.2      tidyverse_2.0.0   
+ [1] flextable_0.9.11   broom_1.0.12       see_0.13.0         performance_0.16.0
+ [5] lmerTest_3.2-0     lme4_1.1-38        Matrix_1.7-1       nlme_3.1-166      
+ [9] car_3.1-5          carData_3.0-6      emmeans_2.0.1      lubridate_1.9.5   
+[13] forcats_1.0.1      stringr_1.6.0      dplyr_1.2.0        purrr_1.2.1       
+[17] readr_2.1.6        tidyr_1.3.2        tibble_3.3.1       ggplot2_4.0.2     
+[21] tidyverse_2.0.0   
 
 loaded via a namespace (and not attached):
- [1] gtable_0.3.6        bayestestR_0.17.0   ggrepel_0.9.6      
- [4] insight_1.4.6       lattice_0.22-6      tzdb_0.5.0         
- [7] numDeriv_2016.8-1.1 vctrs_0.7.1         tools_4.4.2        
-[10] Rdpack_2.6.6        generics_0.1.4      datawizard_1.3.0   
-[13] pbkrtest_0.5.5      parallel_4.4.2      pkgconfig_2.0.3    
-[16] RColorBrewer_1.1-3  S7_0.2.1            lifecycle_1.0.5    
-[19] compiler_4.4.2      farver_2.1.2        textshaping_1.0.4  
-[22] Formula_1.2-5       pillar_1.11.1       nloptr_2.2.1       
-[25] crayon_1.5.3        MASS_7.3-61         reformulas_0.4.4   
-[28] boot_1.3-31         abind_1.4-8         nlme_3.1-166       
-[31] tidyselect_1.2.1    mvtnorm_1.3-3       stringi_1.8.7      
-[34] labeling_0.4.3      splines_4.4.2       grid_4.4.2         
-[37] cli_3.6.5           magrittr_2.0.4      patchwork_1.3.2    
-[40] utf8_1.2.6          withr_3.0.2         scales_1.4.0       
-[43] backports_1.5.0     bit64_4.6.0-1       estimability_1.5.1 
-[46] timechange_0.4.0    bit_4.6.0           ragg_1.5.0         
-[49] hms_1.1.4           coda_0.19-4.1       parameters_0.28.3  
-[52] rbibutils_2.4.1     mgcv_1.9-1          rlang_1.1.7        
-[55] Rcpp_1.1.1          xtable_1.8-8        glue_1.8.0         
-[58] rstudioapi_0.18.0   vroom_1.7.0         minqa_1.2.8        
-[61] R6_2.6.1            systemfonts_1.3.1  
+ [1] tidyselect_1.2.1        farver_2.1.2            S7_0.2.1               
+ [4] fastmap_1.2.0           bayestestR_0.17.0       fontquiver_0.2.1       
+ [7] digest_0.6.39           timechange_0.4.0        estimability_1.5.1     
+[10] lifecycle_1.0.5         magrittr_2.0.4          compiler_4.4.2         
+[13] rlang_1.1.7             tools_4.4.2             utf8_1.2.6             
+[16] data.table_1.18.2.1     knitr_1.51              labeling_0.4.3         
+[19] askpass_1.2.1           bit_4.6.0               xml2_1.5.2             
+[22] RColorBrewer_1.1-3      abind_1.4-8             withr_3.0.2            
+[25] numDeriv_2016.8-1.1     datawizard_1.3.0        grid_4.4.2             
+[28] gdtools_0.5.0           xtable_1.8-8            scales_1.4.0           
+[31] MASS_7.3-61             insight_1.4.6           cli_3.6.5              
+[34] mvtnorm_1.3-3           crayon_1.5.3            rmarkdown_2.30         
+[37] ragg_1.5.0              reformulas_0.4.4        generics_0.1.4         
+[40] otel_0.2.0              rstudioapi_0.18.0       tzdb_0.5.0             
+[43] parameters_0.28.3       minqa_1.2.8             splines_4.4.2          
+[46] parallel_4.4.2          vctrs_0.7.1             boot_1.3-31            
+[49] fontBitstreamVera_0.1.1 hms_1.1.4               patchwork_1.3.2        
+[52] ggrepel_0.9.6           bit64_4.6.0-1           Formula_1.2-5          
+[55] systemfonts_1.3.1       glue_1.8.0              nloptr_2.2.1           
+[58] stringi_1.8.7           gtable_0.3.6            pillar_1.11.1          
+[61] htmltools_0.5.9         openssl_2.3.4           R6_2.6.1               
+[64] textshaping_1.0.4       Rdpack_2.6.6            vroom_1.7.0            
+[67] evaluate_1.0.5          lattice_0.22-6          rbibutils_2.4.1        
+[70] backports_1.5.0         fontLiberation_0.1.0    Rcpp_1.1.1             
+[73] zip_2.3.3               uuid_1.2-2              coda_0.19-4.1          
+[76] mgcv_1.9-1              officer_0.7.3           xfun_0.56              
+[79] pkgconfig_2.0.3        

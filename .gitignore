@@ -6,8 +6,9 @@
 
 data/raw/*
 !data/raw/measurements/
-.posit/assistant
-.positai
+.posit/
+.positai/
 
 /.quarto/
+/*_files/
 **/*.quarto_ipynb

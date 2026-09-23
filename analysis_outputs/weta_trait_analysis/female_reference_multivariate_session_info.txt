@@ -1,5 +1,5 @@
 Analysis label: female-referenced multivariate contrast vectors
-Input: /Users/uqam/.codex/.chatgpt-projects/g-p-6a1f19f199fc8191806d31bfdd7c3ded/sources/trait_data(5).csv
+Input: /Users/uqam/Documents/Research_Admin/research projects/Trait compensation/data/trait_data.csv
 Primary scenario: standardized_head_excluded
 Primary trait set: head_excluded_five_traits
 Primary-analysis rationale: head is excluded because head length contributes to male morph assignment.
@@ -7,7 +7,7 @@ Complete cases: 311 of 313
 Reference pronotum (mm): 7.2
 Residual randomizations: 9999
 Group-stratified bootstrap replicates: 9999
-Contrast-vector figure: /Users/uqam/.codex/.chatgpt-projects/g-p-6a1f19f199fc8191806d31bfdd7c3ded/deliverables/weta_feedback_revision/analysis_outputs/weta_trait_analysis/figures/female_reference_contrast_vectors.png
+Contrast-vector figure: /Users/uqam/Documents/Research_Admin/research projects/Trait compensation/analysis_outputs/weta_trait_analysis/figures/female_reference_contrast_vectors.png
 Optional packages installed: RRPP=FALSE, geomorph=FALSE, evolqg=FALSE
 
 R version 4.4.2 (2024-10-31)
@@ -19,7 +19,7 @@ BLAS:   /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/lib/libRbla
 LAPACK: /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/lib/libRlapack.dylib;  LAPACK version 3.12.0
 
 locale:
-[1] C.UTF-8/C.UTF-8/C.UTF-8/C/C.UTF-8/C.UTF-8
+[1] en_US.UTF-8/en_US.UTF-8/en_US.UTF-8/C/en_US.UTF-8/en_US.UTF-8
 
 time zone: America/Toronto
 tzcode source: internal

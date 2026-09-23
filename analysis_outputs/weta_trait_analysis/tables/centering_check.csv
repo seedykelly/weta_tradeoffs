@@ -1,2 +1,2 @@
-reference_pronotum,mean_log_foretibia_c,mean_log_head_size_c
-7.2,6.049917400563204e-17,7.785749326045426e-17
+reference_pronotum,mean_log_foretibia_c,mean_log_head_size_c,maximum_absolute_group_mean_foretibia_within,maximum_absolute_group_mean_head_within
+7.2,6.648480133488107e-17,7.785749326045426e-17,1.8999632375868013e-16,1.912312116568331e-16

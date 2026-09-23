@@ -1,0 +1,1239 @@
+---
+title: "Supplementary material"
+subtitle: "A mosaic of locomotory and sensory trait allocation across alternative mating strategies in Wellington tree wētā"
+author:
+  - name: Clint D. Kelly
+    affiliations:
+      - ref: cdk
+    corresponding: true
+    email: kelly.clint@uqam.ca
+    orcid: 0000-0002-0693-7211
+
+affiliations:
+  - id: cdk
+    name: Département des Sciences biologiques, Université du Québec à Montréal, Montréal, Canada
+
+format:
+  docx:
+    reference-doc: word-style-template.docx
+    toc: false
+    number-sections: false
+execute:
+  echo: false
+  warning: false
+  message: false
+---
+
+*Département des Sciences biologiques, Université du Québec à Montréal, Montréal, Canada*
+
+*Correspondence: kelly.clint@uqam.ca; ORCID: 0000-0002-0693-7211*
+
+```{r}
+#| label: setup
+#| include: false
+
+library(tidyverse)
+library(knitr)
+library(flextable)
+
+project_dir <- normalizePath(getwd())
+
+# The main manuscript and this supplement use the same reproducible revision.
+# Do not silently fall back to the root analysis_outputs folder: it contains
+# the superseded random-intercept repeated-leg model.
+output_root <- file.path(project_dir, "revision_2026", "analysis_outputs")
+
+analysis_dir     <- file.path(output_root, "weta_trait_analysis")
+tables_dir       <- file.path(analysis_dir, "tables")
+figures_dir      <- file.path(analysis_dir, "figures")
+repeatability_dir <- file.path(output_root, "repeatability")
+main_tables_dir  <- tables_dir
+
+required_files <- c(
+  file.path(repeatability_dir, "measurement_repeatability_robustness.csv"),
+  file.path(repeatability_dir, "measurement_round_effects.csv"),
+  file.path(repeatability_dir, "measurement_round_pairwise_diagnostics.csv"),
+  file.path(repeatability_dir, "measurement_order_effects.csv"),
+  file.path(tables_dir, "female_reference_vector_angles.csv"),
+  file.path(tables_dir, "female_reference_magnitude_differences.csv"),
+  file.path(tables_dir, "female_reference_rank_one_tests.csv"),
+  file.path(tables_dir, "head_leg_raw_slopes.csv"),
+  file.path(tables_dir, "head_leg_raw_strategy_slope_contrasts.csv"),
+  file.path(tables_dir, "weapon_ear_equivalence.csv"),
+  file.path(tables_dir, "ear_body_all_pairwise_group_contrasts.csv"),
+  file.path(tables_dir, "eye_body_all_pairwise_group_contrasts.csv"),
+  file.path(tables_dir, "instar_matched_decomposition.csv"),
+  file.path(tables_dir, "instar_matched_joint_legs.csv"),
+  file.path(tables_dir, "precision_planned_leg_contrasts.csv"),
+  file.path(tables_dir, "precision_weapon_leg_slopes.csv"),
+  file.path(tables_dir, "precision_weapon_ear_slopes.csv"),
+  file.path(tables_dir, "covariance_sign_audit.csv"),
+  file.path(tables_dir, "pca_parallel_analysis.csv"),
+  file.path(tables_dir, "pca_six_trait_sensitivity_parallel_analysis.csv"),
+  file.path(tables_dir, "pca_classification_sensitivity_variance.csv"),
+  file.path(tables_dir, "covariance_matrix_omnibus_tests.csv"),
+  file.path(tables_dir, "covariance_six_trait_sensitivity_omnibus.csv"),
+  file.path(tables_dir, "covariance_matrix_pairwise_tests.csv"),
+  file.path(tables_dir, "covariance_matrix_similarity.csv"),
+  file.path(tables_dir, "covariance_matrix_rarefaction.csv"),
+  file.path(tables_dir, "joint_leg_covariance_model_comparison.csv"),
+  file.path(tables_dir, "joint_leg_unstructured_covariance.csv"),
+  file.path(tables_dir, "morph_classification_summary.csv"),
+  file.path(tables_dir, "morph_frequency_tests.csv"),
+  file.path(tables_dir, "eye_classification_sensitivity.csv"),
+  file.path(tables_dir, "eye_head_increment_test.csv"),
+  file.path(tables_dir, "eye_group_after_head_test.csv"),
+  file.path(tables_dir, "eye_head_support.csv"),
+  file.path(tables_dir, "leg_intermediacy_equivalence.csv"),
+  file.path(tables_dir, "sensory_intermediacy_equivalence.csv"),
+  file.path(tables_dir, "focal_multiplicity_sensitivity.csv"),
+  file.path(figures_dir, "group_trait_correlation_matrices.png"),
+  file.path(figures_dir, "pca_group_scores.png"),
+  file.path(figures_dir, "body_size_distributions.png"),
+  file.path(figures_dir, "head_leg_compensation.png"),
+  file.path(main_tables_dir, "joint_leg_males_vs_female.csv"),
+  file.path(main_tables_dir, "joint_leg_slopes.csv"),
+  file.path(main_tables_dir, "segment_slope_model_tests.csv"),
+  file.path(main_tables_dir, "ear_body_adjusted_group_means.csv"),
+  file.path(main_tables_dir, "eye_body_adjusted_group_means.csv")
+)
+
+missing_files <- required_files[!file.exists(required_files)]
+if (length(missing_files) > 0) {
+  stop(
+    paste0(
+      "The following analysis outputs are missing:\n",
+      paste(missing_files, collapse = "\n"),
+      "\n\nRegenerate the main or supplemental analysis outputs before rendering."
+    ),
+    call. = FALSE
+  )
+}
+
+read_table <- function(filename) {
+  readr::read_csv(file.path(tables_dir, filename), show_col_types = FALSE)
+}
+
+read_main_table <- function(filename) {
+  readr::read_csv(file.path(main_tables_dir, filename), show_col_types = FALSE)
+}
+
+read_repeatability <- function(filename) {
+  readr::read_csv(file.path(repeatability_dir, filename), show_col_types = FALSE)
+}
+
+p_text <- function(p, digits = 3) {
+  dplyr::case_when(
+    is.na(p) ~ "—",
+    p < 0.001 ~ "<0.001",
+    TRUE ~ sprintf(paste0("%.", digits, "f"), p)
+  )
+}
+
+range_text <- function(x, digits = 3) {
+  sprintf(
+    paste0("%.", digits, "f–%.", digits, "f"),
+    min(x, na.rm = TRUE),
+    max(x, na.rm = TRUE)
+  )
+}
+
+supplementary_table <- function(x, align = NULL, font_size = 8.5) {
+  x <- as.data.frame(x)
+  rule <- officer::fp_border(color = "#000000", width = 0.75)
+
+  ft <- flextable::flextable(x) |>
+    flextable::font(fontname = "Times New Roman", part = "all") |>
+    flextable::fontsize(size = font_size, part = "all") |>
+    flextable::color(color = "#000000", part = "all") |>
+    flextable::bold(part = "header") |>
+    flextable::border_remove() |>
+    flextable::hline_top(border = rule, part = "header") |>
+    flextable::hline_bottom(border = rule, part = "header") |>
+    flextable::padding(padding = 2, part = "all") |>
+    flextable::valign(valign = "center", part = "all") |>
+    flextable::autofit() |>
+    flextable::set_table_properties(
+      layout = "autofit",
+      width = 1,
+      opts_word = list(split = FALSE, repeat_headers = TRUE)
+    )
+
+  if (!is.null(align)) {
+    for (j in seq_along(align)) {
+      ft <- flextable::align(ft, j = j, align = align[[j]], part = "all")
+    }
+  }
+
+  ft
+}
+
+# Measurement reliability -----------------------------------------------------
+repeatability_all <- read_repeatability("measurement_repeatability_robustness.csv")
+round_effects     <- read_repeatability("measurement_round_effects.csv")
+round_pairwise    <- read_repeatability("measurement_round_pairwise_diagnostics.csv")
+order_effects     <- read_repeatability("measurement_order_effects.csv")
+
+repeatability_primary <- repeatability_all |>
+  filter(model == "primary_unadjusted")
+repeatability_morph <- repeatability_all |>
+  filter(model == "morph_adjusted")
+repeatability_round <- repeatability_all |>
+  filter(model == "morph_and_round_adjusted")
+
+trait_labels <- c(
+  pronotum = "Pronotum length",
+  head_length = "Head length",
+  head_width = "Head width",
+  forefemur = "Forefemur length",
+  foretibia = "Foretibia length",
+  midfemur = "Midfemur length",
+  midtibia = "Midtibia length",
+  hindfemur = "Hindfemur length",
+  hindtibia = "Hindtibia length",
+  ear = "Ear area",
+  eye = "Eye length"
+)
+
+trait_order <- names(trait_labels)
+
+repeatability_display <- repeatability_primary |>
+  select(trait, pooled_R = R, pooled_lower = CI_lower, pooled_upper = CI_upper) |>
+  left_join(
+    repeatability_morph |>
+      select(trait, morph_R = R, morph_lower = CI_lower, morph_upper = CI_upper),
+    by = "trait"
+  ) |>
+  left_join(
+    repeatability_round |>
+      select(
+        trait,
+        round_R = R,
+        round_lower = CI_lower,
+        round_upper = CI_upper
+      ),
+    by = "trait"
+  ) |>
+  left_join(
+    round_effects |>
+      select(
+        trait,
+        relative_TEM_percent,
+        absolute_agreement_ICC_A1,
+        max_absolute_pairwise_bias_percent,
+        round_P_Holm
+      ),
+    by = "trait"
+  ) |>
+  mutate(
+    trait = factor(trait, levels = trait_order),
+    Trait = unname(trait_labels[as.character(trait)]),
+    Pooled = sprintf("%.4f\n(%.4f–%.4f)", pooled_R, pooled_lower, pooled_upper),
+    `Morph-adjusted` = sprintf(
+      "%.4f\n(%.4f–%.4f)", morph_R, morph_lower, morph_upper
+    ),
+    `Morph + round` = sprintf(
+      "%.4f\n(%.4f–%.4f)", round_R, round_lower, round_upper
+    ),
+    `rTEM (%)` = sprintf("%.2f", relative_TEM_percent),
+    `ICC(A,1)` = sprintf("%.4f", absolute_agreement_ICC_A1),
+    `Max. bias (%)` = sprintf("%.2f", max_absolute_pairwise_bias_percent),
+    `Holm p` = p_text(round_P_Holm)
+  ) |>
+  arrange(trait) |>
+  select(
+    Trait,
+    Pooled,
+    `Morph-adjusted`,
+    `Morph + round`,
+    `rTEM (%)`,
+    `ICC(A,1)`,
+    `Max. bias (%)`,
+    `Holm p`
+  )
+
+min_signed_order_q   <- min(order_effects$signed_slope_P_BH, na.rm = TRUE)
+min_absolute_order_q <- min(order_effects$absolute_error_slope_P_BH, na.rm = TRUE)
+
+# Existing supplementary contrasts -------------------------------------------
+vector_angles <- read_table("female_reference_vector_angles.csv") |>
+  filter(scenario == "standardized_head_excluded")
+vector_magnitude_differences <- read_table(
+  "female_reference_magnitude_differences.csv"
+) |>
+  filter(scenario == "standardized_head_excluded")
+
+vector_pairwise_display <- vector_angles |>
+  left_join(
+    vector_magnitude_differences |>
+      select(
+        comparison,
+        signed_magnitude_difference,
+        magnitude_lower = bootstrap_lower_95,
+        magnitude_upper = bootstrap_upper_95
+      ),
+    by = "comparison"
+  ) |>
+  transmute(
+    Pair = recode(
+      comparison,
+      D8_vs_D9 = "D8–D9",
+      D8_vs_D10 = "D8–D10",
+      D9_vs_D10 = "D9–D10"
+    ),
+    `Angle (°)` = round(angle_degrees, 1),
+    `Lower 95%` = round(bootstrap_lower_95, 1),
+    `Upper 95%` = round(bootstrap_upper_95, 1),
+    `Angle Holm p` = p_text(Holm_p),
+    `Δ magnitude` = round(signed_magnitude_difference, 2),
+    `Δ lower 95%` = round(magnitude_lower, 2),
+    `Δ upper 95%` = round(magnitude_upper, 2)
+  )
+
+head_leg_slopes <- read_table("head_leg_raw_slopes.csv")
+head_leg_trend_col <- names(head_leg_slopes)[str_detect(names(head_leg_slopes), "\\.trend$")][1]
+
+head_leg_slopes_display <- head_leg_slopes |>
+  transmute(
+    Group = group,
+    Leg = leg,
+    Slope = round(.data[[head_leg_trend_col]], 3),
+    `Lower 95% CI` = round(lower.CL, 3),
+    `Upper 95% CI` = round(upper.CL, 3),
+    `p-value` = p_text(p.value)
+  )
+
+head_leg_contrasts_display <- read_table(
+  "head_leg_raw_strategy_slope_contrasts.csv"
+) |>
+  transmute(
+    Leg = leg,
+    Contrast = contrast,
+    Difference = round(estimate, 3),
+    `Lower 95% CI` = round(lower.CL, 3),
+    `Upper 95% CI` = round(upper.CL, 3),
+    `Adjusted p` = p_text(p.value),
+    `Holm family` = Holm_family
+  )
+
+weapon_ear_display <- read_table("weapon_ear_equivalence.csv") |>
+  transmute(
+    Group = group,
+    n,
+    `Standardized slope` = round(standardized_beta, 3),
+    `Lower 90% CI` = round(lower_90, 3),
+    `Upper 90% CI` = round(upper_90, 3),
+    `Robust slope` = round(robust_beta, 3),
+    `TOST p` = p_text(TOST_p),
+    `Equivalent within ±0.20` = if_else(equivalent, "Yes", "No")
+  )
+
+ear_pairs <- read_table("ear_body_all_pairwise_group_contrasts.csv")
+eye_pairs <- read_table("eye_body_all_pairwise_group_contrasts.csv")
+
+sensory_pairwise_display <- bind_rows(
+  ear_pairs |>
+    transmute(
+      Trait = "Tympanal area",
+      Contrast = contrast,
+      Ratio = area_ratio,
+      `Lower 95% CI` = ratio_lower^2,
+      `Upper 95% CI` = ratio_upper^2,
+      p.value,
+      `Holm family` = Holm_family
+    ),
+  eye_pairs |>
+    transmute(
+      Trait = "Eye length",
+      Contrast = contrast,
+      Ratio = ratio,
+      `Lower 95% CI` = ratio_lower,
+      `Upper 95% CI` = ratio_upper,
+      p.value,
+      `Holm family` = Holm_family
+    )
+) |>
+  transmute(
+    Trait,
+    Contrast,
+    Ratio = round(Ratio, 3),
+    `Lower 95% CI` = round(`Lower 95% CI`, 3),
+    `Upper 95% CI` = round(`Upper 95% CI`, 3),
+    `Adjusted p` = p_text(p.value),
+    `Holm family`
+  )
+
+# Dimensionality sensitivities ------------------------------------------------
+rank_one <- read_table("female_reference_rank_one_tests.csv")
+pca_primary <- read_table("pca_parallel_analysis.csv") |> filter(component == "PC1")
+pca_six <- read_table("pca_six_trait_sensitivity_parallel_analysis.csv") |>
+  filter(component == "PC1")
+pca_classification <- read_table("pca_classification_sensitivity_variance.csv") |>
+  filter(component == "PC1")
+
+rank_primary <- rank_one |> filter(scenario == "standardized_head_excluded")
+rank_six     <- rank_one |> filter(scenario == "standardized_six")
+rank_raw     <- rank_one |> filter(scenario == "raw_log_six")
+
+dimensionality_display <- bind_rows(
+  rank_one |>
+    transmute(
+      Approach = "Female-referenced rank-one test",
+      Scenario = recode(
+        scenario,
+        standardized_head_excluded = "Five traits, standardized; head excluded (base scenario)",
+        standardized_six = "Six traits, standardized; head included",
+        raw_log_six = "Six traits on raw log scale"
+      ),
+      Estimate = sprintf("%.1f%% captured by rank one", 100 * rank_one_fraction),
+      `Null reference` = sprintf("95th percentile = %.1f%%", 100 * null_95),
+      `p-value` = p_text(p_value),
+      Conclusion = "Secondary direction detected"
+    ),
+  bind_rows(
+    pca_primary |> mutate(Scenario = "Five traits, standardized; head excluded (base scenario)"),
+    pca_six |> mutate(Scenario = "Six traits, standardized; head included"),
+    pca_classification |>
+      mutate(Scenario = "Five traits after excluding classification-sensitive males")
+  ) |>
+    transmute(
+      Approach = "PCA with parallel analysis",
+      Scenario,
+      Estimate = sprintf(
+        "PC1 = %.1f%%; eigenvalue %.3f",
+        variance_percent,
+        observed_eigenvalue
+      ),
+      `Null reference` = sprintf(
+        "95th-percentile eigenvalue = %.3f",
+        parallel_95_eigenvalue
+      ),
+      `p-value` = "—",
+      Conclusion = "One component retained"
+    )
+)
+
+# Matrix-structure checks -----------------------------------------------------
+matrix_omnibus <- read_table("covariance_matrix_omnibus_tests.csv")
+matrix_six     <- read_table("covariance_six_trait_sensitivity_omnibus.csv")
+matrix_pairwise <- read_table("covariance_matrix_pairwise_tests.csv")
+matrix_similarity <- read_table("covariance_matrix_similarity.csv")
+matrix_rarefaction <- read_table("covariance_matrix_rarefaction.csv")
+
+matrix_omnibus_display <- bind_rows(
+  matrix_omnibus |>
+    transmute(
+      `Trait set` = "Five non-head traits (base scenario)",
+      Matrix = str_to_sentence(matrix_type),
+      Statistic = round(statistic, 3),
+      Permutations = permutations,
+      `p-value` = p_text(p_value)
+    ),
+  matrix_six |>
+    transmute(
+      `Trait set` = "Six traits including head (sensitivity)",
+      Matrix = str_to_sentence(matrix_type),
+      Statistic = round(statistic, 3),
+      Permutations = permutations,
+      `p-value` = p_text(p_value)
+    )
+)
+
+matrix_pairwise_display <- matrix_pairwise |>
+  transmute(
+    Matrix = str_to_sentence(matrix_type),
+    Pair = paste(group_1, "–", group_2),
+    `Frobenius distance` = round(frobenius_distance, 3),
+    `Raw p` = p_text(p_value),
+    `BH p` = p_text(p_BH),
+    `Holm p` = p_text(p_Holm)
+  )
+
+matrix_similarity_display <- matrix_similarity |>
+  left_join(
+    matrix_rarefaction,
+    by = c("matrix_type", "group_1", "group_2", "trait_set"),
+    suffix = c("", "_rarefaction")
+  ) |>
+  transmute(
+    Matrix = str_to_sentence(matrix_type),
+    Pair = paste(group_1, "–", group_2),
+    `Element correlation` = round(element_correlation, 3),
+    `Random-skewers similarity` = round(random_skewers_similarity, 3),
+    `Rarefied distance, median (95% interval)` = sprintf(
+      "%.3f (%.3f–%.3f)",
+      median_distance,
+      lower_95,
+      upper_95
+    ),
+    `Target n` = target_n
+  )
+
+primary_covariance <- matrix_omnibus |> filter(matrix_type == "covariance")
+primary_correlation <- matrix_omnibus |> filter(matrix_type == "correlation")
+six_covariance <- matrix_six |> filter(matrix_type == "covariance")
+six_correlation <- matrix_six |> filter(matrix_type == "correlation")
+
+# Repeated-leg covariance -----------------------------------------------------
+leg_covariance_models <- read_table("joint_leg_covariance_model_comparison.csv")
+leg_covariance_parameters <- read_table("joint_leg_unstructured_covariance.csv")
+
+leg_covariance_display <- leg_covariance_models |>
+  transmute(
+    Model = recode(
+      covariance_model,
+      mod_leg_cs = "Compound symmetry",
+      mod_leg_hetcs = "Heterogeneous compound symmetry",
+      mod_leg_allocation = "Unstructured covariance"
+    ),
+    Parameters = df,
+    AIC = round(AIC, 2),
+    BIC = round(BIC, 2),
+    `Log likelihood` = round(logLik, 2),
+    Comparison = if_else(is.na(Test), "—", Test),
+    `Likelihood-ratio statistic` = if_else(is.na(L.Ratio), NA_real_, round(L.Ratio, 2)),
+    `p-value` = p_text(`p-value`)
+  )
+
+leg_covariance_parameter_display <- leg_covariance_parameters |>
+  transmute(Parameter = parameter, Estimate = round(estimate, 3))
+
+leg_covariance_selected <- leg_covariance_models |>
+  filter(covariance_model == "mod_leg_allocation")
+leg_covariance_selected_p <- leg_covariance_selected[["p-value"]]
+
+# Instar-matched decomposition and precision reporting -----------------------
+# Produced by instar_matched_precision_analysis.R, the fourth pipeline stage.
+instar_decomposition <- read_table("instar_matched_decomposition.csv")
+instar_joint_legs    <- read_table("instar_matched_joint_legs.csv")
+precision_leg        <- read_table("precision_planned_leg_contrasts.csv")
+precision_weapon_leg <- read_table("precision_weapon_leg_slopes.csv")
+precision_we_slopes  <- read_table("precision_weapon_ear_slopes.csv")
+sign_audit           <- read_table("covariance_sign_audit.csv")
+
+instar_display_names <- c(
+  foreleg = "Foreleg length",
+  midleg  = "Midleg length",
+  hindleg = "Hindleg length",
+  ear_lin = "Tympanic organ size",
+  eye     = "Eye length"
+)
+
+instar_decomposition_display <- instar_decomposition |>
+  transmute(
+    Trait                    = instar_display_names[trait],
+    n                        = n,
+    `Per instar (%)`         = round(instar_component_pct_per_instar, 1),
+    `Per instar P`           = p_text(instar_component_holm_p),
+    `Weapon (%)`             = round(weapon_component_pct_male_vs_female, 1),
+    `Weapon P`               = p_text(weapon_component_holm_p),
+    `Component difference P` = p_text(component_difference_holm_p),
+    `Larger component`       = larger_component
+  )
+
+precision_leg_display <- precision_leg |>
+  mutate(Leg = if_else(is.na(leg), "All legs (allocation)", as.character(leg))) |>
+  transmute(
+    Leg                      = Leg,
+    Contrast                 = contrast,
+    `Difference (%)`         = round(percent_difference, 1),
+    `Lower 95%`              = round(ci_lower, 3),
+    `Upper 95%`              = round(ci_upper, 3),
+    `Minimum detectable (%)` = round(min_detectable_percent, 1)
+  )
+
+weapon_slope_precision_display <- bind_rows(
+  precision_weapon_leg |>
+    transmute(
+      Model               = paste0("Leg: ", leg),
+      Group               = morph_label(group),
+      Slope               = round(weapon_leg_slope, 3),
+      SE                  = round(SE, 3),
+      `Excludes zero`     = if_else(excludes_zero, "yes", "no"),
+      `Minimum detectable` = round(min_detectable_slope, 2)
+    ),
+  precision_we_slopes |>
+    transmute(
+      Model               = "Sensory: ear",
+      Group               = morph_label(group),
+      Slope               = round(weapon_ear_slope, 3),
+      SE                  = round(SE, 3),
+      `Excludes zero`     = if_else(excludes_zero, "yes", "no"),
+      `Minimum detectable` = round(min_detectable_slope, 2)
+    )
+)
+
+sign_audit_display <- sign_audit |>
+  transmute(
+    Group                   = morph_label(group),
+    `Pairwise correlations` = n_pairwise,
+    Positive                = n_positive,
+    Negative                = n_negative,
+    `Mean r`                = round(mean_correlation, 2),
+    `Minimum r`             = round(minimum_correlation, 2),
+    `Maximum r`             = round(maximum_correlation, 2)
+  )
+
+# Classification and composition ---------------------------------------------
+morph_classification <- read_table("morph_classification_summary.csv") |> slice(1)
+morph_frequency <- read_table("morph_frequency_tests.csv")
+eye_classification <- read_table("eye_classification_sensitivity.csv")
+eye_head_increment <- read_table("eye_head_increment_test.csv")
+eye_group_after_head <- read_table("eye_group_after_head_test.csv")
+eye_head_support <- read_table("eye_head_support.csv")
+
+morph_frequency_display <- morph_frequency |>
+  transmute(
+    Reference = reference,
+    Observed = paste(observed_eighth, observed_ninth, observed_tenth, sep = " / "),
+    `Expected eighth` = sprintf("%.1f%%", 100 * expected_prop_eighth),
+    `Expected ninth` = sprintf("%.1f%%", 100 * expected_prop_ninth),
+    `Expected tenth` = sprintf("%.1f%%", 100 * expected_prop_tenth),
+    `χ²` = round(chi_square, 2),
+    df,
+    `p-value` = p_text(p_value)
+  )
+
+eye_classification_display <- eye_classification |>
+  transmute(
+    Dataset = dataset,
+    `Numerator df` = numerator_df,
+    `Residual df` = residual_df,
+    F = round(F, 2),
+    `p-value` = p_text(p_value)
+  )
+
+eye_head_model_display <- bind_rows(
+  eye_head_increment,
+  eye_group_after_head
+) |>
+  transmute(
+    Analysis = analysis,
+    `Numerator df` = numerator_df,
+    `Residual df` = residual_df,
+    F = round(F, 2),
+    `p-value` = p_text(p_value)
+  )
+
+eye_head_support_display <- eye_head_support |>
+  transmute(
+    Group = group,
+    n,
+    `Minimum head size` = round(minimum_head_size, 3),
+    `Maximum head size` = round(maximum_head_size, 3),
+    `Common lower bound` = round(common_lower, 3),
+    `Common upper bound` = round(common_upper, 3),
+    `Common support` = if_else(common_overlap, "Yes", "No")
+  )
+
+# Equivalence-region sensitivity ---------------------------------------------
+leg_equivalence <- read_table("leg_intermediacy_equivalence.csv")
+sensory_equivalence <- read_table("sensory_intermediacy_equivalence.csv")
+
+equivalence_sensitivity_display <- bind_rows(
+  leg_equivalence |>
+    transmute(
+      Trait = leg,
+      Scale = "Length ratio",
+      `Equivalence region` = paste0("±", equivalence_margin_percent, "%"),
+      Ratio = estimate_ratio,
+      `Lower 90% CI` = lower_90_ratio,
+      `Upper 90% CI` = upper_90_ratio,
+      TOST_p,
+      equivalent
+    ),
+  sensory_equivalence |>
+    transmute(
+      Trait = trait,
+      Scale = reported_scale,
+      `Equivalence region` = paste0("±", equivalence_margin_percent, "%"),
+      Ratio = estimate_ratio,
+      `Lower 90% CI` = lower_90_ratio,
+      `Upper 90% CI` = upper_90_ratio,
+      TOST_p,
+      equivalent
+    )
+) |>
+  transmute(
+    Trait,
+    Scale,
+    `Equivalence region`,
+    Ratio = round(Ratio, 3),
+    `Lower 90% CI` = round(`Lower 90% CI`, 3),
+    `Upper 90% CI` = round(`Upper 90% CI`, 3),
+    `TOST p` = p_text(TOST_p),
+    Equivalent = if_else(equivalent, "Yes", "No")
+  )
+
+# Cross-analysis multiplicity sensitivity ------------------------------------
+focal_multiplicity <- read_table("focal_multiplicity_sensitivity.csv")
+
+focal_multiplicity_display <- focal_multiplicity |>
+  transmute(
+    Analysis = analysis,
+    Tier = tier,
+    `Raw p` = p_text(p_value),
+    `BH p` = p_text(p_BH),
+    `Holm p` = p_text(p_Holm)
+  )
+
+# Detailed estimates for the analyses described in the main manuscript ------
+leg_contrasts_main <- read_main_table("joint_leg_males_vs_female.csv")
+leg_slopes_main <- read_main_table("joint_leg_slopes.csv")
+segment_tests_main <- read_main_table("segment_slope_model_tests.csv")
+ear_means_main <- read_main_table("ear_body_adjusted_group_means.csv")
+eye_means_main <- read_main_table("eye_body_adjusted_group_means.csv")
+
+leg_contrasts_main_display <- leg_contrasts_main |>
+  transmute(
+    Leg = leg,
+    Contrast = contrast,
+    `Difference (%)` = round(percent_difference, 1),
+    `Ratio lower 95% CI` = round(ratio_lower, 3),
+    `Ratio upper 95% CI` = round(ratio_upper, 3),
+    `Adjusted p` = p_text(p.value)
+  )
+
+leg_slopes_main_display <- leg_slopes_main |>
+  transmute(
+    Group = group, Leg = leg,
+    Slope = round(`logP_c.trend`, 3),
+    `Lower 95% CI` = round(lower.CL, 3),
+    `Upper 95% CI` = round(upper.CL, 3)
+  )
+
+segment_tests_main_display <- segment_tests_main |>
+  transmute(
+    Segment = analysis,
+    `Numerator df` = numerator_df,
+    `Residual df` = full_residual_df,
+    F = round(F, 2),
+    `p-value` = p_text(p_value)
+  )
+
+sensory_means_main_display <- bind_rows(
+  ear_means_main |>
+    transmute(
+      Trait = "Tympanic organ area (mm²)", Group = group,
+      Estimate = predicted_ear_area,
+      `Lower 95% CI` = ear_area_lower,
+      `Upper 95% CI` = ear_area_upper
+    ),
+  eye_means_main |>
+    transmute(
+      Trait = "Eye length (mm)", Group = group,
+      Estimate = predicted_eye_length,
+      `Lower 95% CI` = eye_lower,
+      `Upper 95% CI` = eye_upper
+    )
+) |>
+  mutate(across(c(Estimate, `Lower 95% CI`, `Upper 95% CI`), ~ round(.x, 3)))
+```
+
+# Overview
+
+This supplement distinguishes detailed estimates from the main-text models (Tables S14–S17) from additional analyses (Tables S1–S13 and Figures S1–S4). The latter include measurement reliability, multivariate descriptions, covariance-matrix comparisons, alternative weapon–trait specifications, classification and sample-composition checks, equivalence-region sensitivities and a cross-analysis multiplicity audit. Both documents use the same `revision_2026/analysis_outputs` results, generated by `revision_2026/scripts/run_all.R` and its separate repeatability script. Analyses not used for main-text inference are explicitly identified as exploratory or sensitivity analyses rather than presented as additional primary tests.
+
+Residual-index models, separate segment-level decompositions and extensive group-specific slope searches are retained in the reproducibility archive but are not promoted as inferential evidence. They either duplicate a one-stage model reported here or do not materially change the biological conclusions.
+
+# Supplementary methods
+
+## Measurement reliability
+
+Forty-eight specimens from the 2016 collection were measured on three occasions. The measurement-order file records 12 individuals per sex or morph group and one from each of 12 size strata within each group. Repeatability was estimated for pooled, morph-adjusted and morph-plus-round models. Relative technical error of measurement, absolute-agreement ICC(A,1), round-pair bias and measurement-order trends were also calculated. The order analyses were treated as diagnostics; their minimum Benjamini–Hochberg-adjusted p-values were `r p_text(min_signed_order_q)` for signed drift and `r p_text(min_absolute_order_q)` for absolute-error drift.
+
+## Multivariate sensitivity analyses
+
+The base female-referenced contrast-vector and PCA analyses excluded composite head size because head length contributed to male morph assignment. Sensitivity analyses restored head size, repeated the rank-one decomposition on unstandardized log traits, and repeated the five-trait PCA after excluding males whose archived labels disagreed with the published 2010 head-length thresholds. These multivariate analyses are supplementary explorations, not tests reported as primary in the accompanying manuscript. The permutation analyses used 9,999 permutations.
+
+## Matrix comparisons and unequal sample sizes
+
+Within-group covariance and correlation matrices for the five non-head traits were compared using omnibus and pairwise Frobenius-distance randomization tests. Pairwise p-values were adjusted by both Benjamini–Hochberg and Holm procedures. Matrix-element correlations and random-skewers similarities were used as descriptive orientation measures. To evaluate unequal group sizes, each group was repeatedly rarefied to 38 specimens, the size of the tenth-instar male group.
+
+## Repeated-leg covariance structure
+
+The main repeated-leg model estimated separate residual variances for fore-, mid- and hindlegs and freely estimated the three within-individual residual correlations. It was compared with compound-symmetry and heterogeneous compound-symmetry structures using fits with identical fixed effects. An earlier random-intercept model, which assumed a more restrictive covariance structure, gave a different conclusion for the body-size-by-group-by-leg interaction; the revised unstructured model is used for main-text inference. A separate individual-by-leg random intercept is not identifiable because each individual-by-leg cell contains one observation.
+
+## Secondary integration, equivalence and sampling checks
+
+Main-text weapon–leg relationships were estimated in one stage from raw log composite head size while controlling for pronotum length, group and leg identity. Weapon–ear slopes were likewise estimated in one stage; an exploratory equivalence sensitivity assessed them against an illustrative standardized near-zero region of −0.20 to 0.20. All-pairs sensory comparisons were Holm-adjusted within each six-comparison trait family and are separate from the main text's planned contrast families. Morph-composition χ² tests compared the analysed males with two published empirical compositions; they diagnose compositional mismatch but cannot identify its cause because collection microhabitat and gallery-search effort were not retained.
+
+## Cross-analysis multiplicity audit
+
+The within-family Holm adjustments reported for planned contrasts remain the manuscript's inferential corrections. As a separate sensitivity analysis, ten selected omnibus p-values were adjusted together using Benjamini–Hochberg and Holm procedures. This broader audit is descriptive and does not replace the main-text tests.
+
+# Supplementary results
+
+## Reliability and measurement-session effects
+
+All traits were highly repeatable, and the conclusions were unchanged after adjustment for morph and measurement round (Table S1). Round effects were detectable for several traits, but their magnitude was small relative to among-individual variation. No evidence of progressive signed or absolute-error drift was detected within remeasurement sessions.
+
+## Directional dimensionality
+
+The base five-trait rank-one model captured `r sprintf("%.1f", 100 * rank_primary$rank_one_fraction)`% of design-weighted group-effect variation, while the standardized six-trait and raw-log six-trait sensitivities captured `r sprintf("%.1f", 100 * rank_six$rank_one_fraction)`% and `r sprintf("%.1f", 100 * rank_raw$rank_one_fraction)`%, respectively. In every case the residual component beyond rank one exceeded the randomization distribution (`r p_text(max(rank_one$p_value))`; Table S7). Parallel analysis retained one component in the base five-trait analysis, the six-trait sensitivity and the classification-exclusion sensitivity (Supplementary Figure S2). These exploratory results show one dominant dimension together with a smaller detected secondary direction in adjusted group means.
+
+## Matrix structure
+
+The base five-trait omnibus tests detected neither a covariance-matrix difference (`r p_text(primary_covariance$p_value)`) nor a correlation-matrix difference (`r p_text(primary_correlation$p_value)`; Supplementary Figure S1). The six-trait sensitivity detected a covariance-magnitude difference (`r p_text(six_covariance$p_value)`), but not a correlation-matrix difference (`r p_text(six_correlation$p_value)`). No five-trait pairwise matrix comparison survived Holm adjustment (Table S8). Matrix-element correlations, random-skewers similarities and rarefaction summaries are reported in Table S9 rather than interpreted as independent hypothesis tests.
+
+## Repeated-leg covariance and secondary analyses
+
+In the alternative covariance-structure fits, unstructured repeated-leg covariance was preferred to heterogeneous compound symmetry (likelihood-ratio statistic = `r sprintf("%.2f", leg_covariance_selected$L.Ratio)`, `r p_text(leg_covariance_selected_p)`; Table S10a). Pairwise residual correlations ranged from `r sprintf("%.3f", min(leg_covariance_parameters$estimate[1:3]))` to `r sprintf("%.3f", max(leg_covariance_parameters$estimate[1:3]))` (Table S10b). The one-stage raw-head weapon–leg slopes were positive in 11 of 12 group-by-leg combinations, but planned differences among slopes were imprecise (Tables S3–S4). Weapon–ear slopes did not meet the illustrative equivalence criterion in any group (Table S5).
+
+## Classification and sample composition
+
+The archived file contained `r morph_classification$male_n` males. Applying the published 2010 thresholds changed `r morph_classification$n_disagree_legacy_2010` labels (`r sprintf("%.1f", morph_classification$percent_disagree_legacy_2010)`%). Excluding those specimens did not alter the head-adjusted eye-length omnibus conclusion (Table S11). Male composition differed from both published empirical references (Table S11), but the source of the difference cannot be resolved from the archive. The 7.2-mm reference pronotum used for adjusted comparisons fell within the observed range of every group (Supplementary Figure S3).
+
+## Cross-analysis multiplicity
+
+In the selected unstructured model, the group-by-leg allocation effect and the raw-head weapon–leg interaction remained supported in the ten-test audit. The body-size-by-group-by-leg interaction was unsupported even before cross-analysis adjustment (Table S12); the earlier random-intercept model gave a nominal $p=0.044$. The difference is a model-specification sensitivity, not merely an effect of multiplicity adjustment, and warrants caution when interpreting detailed allometric-slope differences.
+
+{{< pagebreak >}}
+
+# Supplementary tables
+
+**Table S1**. Repeatability, agreement and measurement-round diagnostics for 11 morphological traits measured three times.
+
+```{r}
+#| label: table-s1-repeatability
+
+repeatability_display |>
+  supplementary_table(
+    align = c("left", "center", "center", "center", "right", "right", "right", "right"),
+    font_size = 8
+  )
+```
+
+*Note.* Repeatability values are individual-level ICCs with 95% bootstrap confidence intervals. rTEM is the within-individual standard deviation divided by the trait mean × 100. ICC(A,1) is the single-measure absolute-agreement coefficient. Maximum bias is the largest absolute round-pair mean difference as a percentage of the trait mean. Round-effect p-values are Holm-adjusted across traits.
+
+{{< pagebreak >}}
+
+**Table S2**. Exploratory pairwise descriptions of standardized female-referenced contrast vectors for the five nonclassification traits. D8, D9 and D10 denote the female-referenced eighth-, ninth- and tenth-instar male vectors. The global rank-one test is reported separately in Table S7.
+
+```{r}
+#| label: table-s2-vectors
+
+vector_pairwise_display |>
+  supplementary_table(
+    align = c("left", rep("right", 7)),
+    font_size = 8
+  )
+```
+
+{{< pagebreak >}}
+
+**Table S3**. Group- and leg-specific partial slopes of log leg length on raw log composite head size, where composite head size is the geometric mean of head length and head width. The one-stage repeated-trait model also contains log pronotum length, group, leg identity and their specified interactions. Individual slope p-values are unadjusted.
+
+```{r}
+#| label: table-s3-weapon-leg-slopes
+
+head_leg_slopes_display |>
+  supplementary_table(
+    align = c("left", "left", "right", "right", "right", "right")
+  )
+```
+
+{{< pagebreak >}}
+
+**Table S4**. Planned contrasts among weapon–leg slopes. P-values are Holm-adjusted within the three-contrast family for each leg pair.
+
+```{r}
+#| label: table-s4-weapon-leg-contrasts
+
+head_leg_contrasts_display |>
+  supplementary_table(
+    align = c("left", "left", "right", "right", "right", "right", "left"),
+    font_size = 8
+  )
+```
+
+{{< pagebreak >}}
+
+**Table S5**. Within-group standardized partial slopes of log linearized tympanal size on raw log composite head size, controlling for log pronotum length. Linearized tympanal size is the square root of tympanal area. Equivalence required the complete 90% confidence interval to fall within −0.20 to 0.20; robust slopes are Huber M-estimates.
+
+```{r}
+#| label: table-s5-weapon-ear
+
+weapon_ear_display |>
+  supplementary_table(
+    align = c("left", "right", "right", "right", "right", "right", "right", "center")
+  )
+```
+
+{{< pagebreak >}}
+
+**Table S6**. Exploratory all-pairs group contrasts in size-adjusted tympanal area and eye length at a pronotum length of 7.2 mm. These six-pair families differ from the planned contrast families in the main manuscript. Ratios greater than one indicate that the first named group had the larger predicted trait. P-values are Holm-adjusted within the six group pairs for each trait.
+
+```{r}
+#| label: table-s6-sensory
+
+sensory_pairwise_display |>
+  supplementary_table(
+    align = c("left", "left", "right", "right", "right", "right", "left"),
+    font_size = 8
+  )
+```
+
+{{< pagebreak >}}
+
+**Table S7**. Sensitivity of dimensionality conclusions to trait definition, scaling and morph-classification uncertainty.
+
+```{r}
+#| label: table-s7-dimensionality
+
+dimensionality_display |>
+  supplementary_table(
+    align = c("left", "left", "left", "left", "right", "left"),
+    font_size = 8
+  )
+```
+
+{{< pagebreak >}}
+
+**Table S8a**. Omnibus permutation comparisons of within-group covariance and correlation matrices.
+
+```{r}
+#| label: table-s8-matrix-tests
+
+matrix_omnibus_display |>
+  supplementary_table(
+    align = c("left", "left", "right", "right", "right")
+  )
+```
+
+**Table S8b**. Pairwise permutation comparisons of within-group covariance and correlation matrices. P-values are reported with both Benjamini–Hochberg and Holm adjustment across the six group pairs within each matrix type.
+
+```{r}
+#| label: table-s8-matrix-pairwise
+
+matrix_pairwise_display |>
+  supplementary_table(
+    align = c("left", "left", "right", "right", "right", "right"),
+    font_size = 8
+  )
+```
+
+{{< pagebreak >}}
+
+**Table S9**. Descriptive matrix similarities and unequal-sample-size rarefaction. Rarefaction used 2,000 subsamples that reduced each group to 38 specimens; intervals are the 2.5th and 97.5th percentiles of the resulting distance distribution.
+
+```{r}
+#| label: table-s9-matrix-similarity
+
+matrix_similarity_display |>
+  supplementary_table(
+    align = c("left", "left", "right", "right", "right", "right"),
+    font_size = 8
+  )
+```
+
+{{< pagebreak >}}
+
+**Table S10a**. Comparison of covariance structures for the repeated-leg model. All models contain the same fixed-effects specification and were fitted by REML. The selected unstructured fit is used for main-text inference.
+
+```{r}
+#| label: table-s10-leg-covariance-models
+
+leg_covariance_display |>
+  supplementary_table(
+    align = c("left", "right", "right", "right", "right", "center", "right", "right"),
+    font_size = 8
+  )
+```
+
+**Table S10b**. Estimated parameters from the selected unstructured covariance model.
+
+```{r}
+#| label: table-s10-leg-covariance-parameters
+
+leg_covariance_parameter_display |>
+  supplementary_table(align = c("left", "right"))
+```
+
+{{< pagebreak >}}
+
+**Table S11a**. Morph-classification and sample-composition sensitivity checks. Observed counts are ordered as eighth / ninth / tenth instar.
+
+```{r}
+#| label: table-s11-frequency
+
+morph_frequency_display |>
+  supplementary_table(
+    align = c("left", "center", "right", "right", "right", "right", "right", "right"),
+    font_size = 8
+  )
+```
+
+**Table S11b**. Head-adjusted eye-length group test under the archived labels and after excluding males whose labels disagree with the published 2010 thresholds.
+
+```{r}
+#| label: table-s11-eye-classification
+
+eye_classification_display |>
+  supplementary_table(
+    align = c("left", "right", "right", "right", "right")
+  )
+```
+
+**Table S11c**. Head-size and group contributions to eye length when pronotum, composite head size and group are fitted jointly.
+
+```{r}
+#| label: table-s11-eye-head-model
+
+eye_head_model_display |>
+  supplementary_table(
+    align = c("left", "right", "right", "right", "right")
+  )
+```
+
+{{< pagebreak >}}
+
+**Table S11d**. Observed composite head-size ranges. The reversed common bounds show that the four groups have no shared head-size support.
+
+```{r}
+#| label: table-s11-eye-head-support
+
+eye_head_support_display |>
+  supplementary_table(
+    align = c("left", "right", "right", "right", "right", "right", "center"),
+    font_size = 8
+  )
+```
+
+{{< pagebreak >}}
+
+**Table S12**. Cross-analysis multiplicity sensitivity for ten selected omnibus tests from the revised analyses. The repeated-leg entries use the selected unstructured covariance model and the weapon–leg entry uses raw composite head size, as in the main manuscript. This descriptive audit does not replace the within-family Holm adjustments used for planned contrasts.
+
+```{r}
+#| label: table-s12-multiplicity
+
+focal_multiplicity_display |>
+  supplementary_table(
+    align = c("left", "left", "right", "right", "right"),
+    font_size = 8
+  )
+```
+
+{{< pagebreak >}}
+
+**Table S13**. Exploratory sensitivity of ninth-instar midpoint equivalence to illustrative ±2.5% and ±5% regions. Equivalence under each stated region requires the complete 90% confidence interval to fall within it; lack of equivalence is not evidence of a difference.
+
+```{r}
+#| label: table-s13-equivalence
+
+equivalence_sensitivity_display |>
+  supplementary_table(
+    align = c("left", "left", "center", "right", "right", "right", "right", "center"),
+    font_size = 8
+  )
+```
+
+{{< pagebreak >}}
+
+## Detailed estimates from the main-text models
+
+The following tables use the same `revision_2026/analysis_outputs/weta_trait_analysis` results as the accompanying main manuscript. They report exact estimates underlying its figures and selected contrasts. They are separate from the exploratory and sensitivity analyses in Tables S1–S13.
+
+**Table S14**. Male–female contrasts in predicted leg length at a pronotum length of 7.2 mm from the main-text repeated-trait model. Percent differences are relative to females; positive values indicate longer legs in males. Confidence limits are for the male-to-female ratio. P-values are Holm-adjusted within leg pair.
+
+```{r}
+#| label: table-s14-main-leg-contrasts
+
+leg_contrasts_main_display |>
+  supplementary_table(
+    align = c("left", "left", "right", "right", "right", "right"),
+    font_size = 8
+  )
+```
+
+{{< pagebreak >}}
+
+**Table S15**. Group- and leg-specific allometric slopes of log leg length on log pronotum length from the main-text repeated-trait model. Confidence intervals describe individual slopes. Because the omnibus group-by-leg slope interaction was not supported, these estimates are descriptive rather than evidence of morph-specific slope differences.
+
+```{r}
+#| label: table-s15-main-leg-slopes
+
+leg_slopes_main_display |>
+  supplementary_table(align = c("left", "left", "right", "right", "right"))
+```
+
+{{< pagebreak >}}
+
+**Table S16**. Exploratory nested-model tests for group-specific allometric slopes of femur and tibia segments. These are six separate ordinary least-squares comparisons, not contrasts from the joint repeated-trait model; p-values are unadjusted.
+
+```{r}
+#| label: table-s16-main-segment-tests
+
+segment_tests_main_display |>
+  supplementary_table(align = c("left", "right", "right", "right", "right"))
+```
+
+{{< pagebreak >}}
+
+**Table S17**. Body-size-adjusted predicted tympanic organ area and eye length at a pronotum length of 7.2 mm from the main-text sensory models. Estimates and 95% confidence intervals are back-transformed to the stated units; these are group predictions, not pairwise contrasts.
+
+```{r}
+#| label: table-s17-main-sensory-means
+
+sensory_means_main_display |>
+  supplementary_table(align = c("left", "left", "right", "right", "right"))
+```
+
+{{< pagebreak >}}
+
+## Instar-matched decomposition and precision
+
+The dimensionality, ordination and covariance-matrix results are reported in
+the sections above (Tables S7--S9). The tables below report the two analyses
+added during revision: a decomposition of trait divergence into a per-instar
+component and an instar-matched weapon component, and the precision of the
+planned contrasts expressed as minimum detectable effects.
+
+{{< pagebreak >}}
+
+**Table S18**. Instar-matched decomposition of each trait into a per-instar
+component and a weapon component. Both components are estimated in one model
+containing log pronotum length, centred instar number and sex. Females mature
+at the tenth instar, so the sex coefficient is the tenth-instar
+male-versus-female difference at matched instar number. The component
+difference is tested directly, by testing the difference of the two
+coefficients rather than comparing their p-values. Percentages are
+back-transformed from the log scale, and p-values are Holm-adjusted across
+the five traits within each component.
+
+```{r}
+#| label: table-s18-instar-decomposition
+
+instar_decomposition_display |>
+  supplementary_table(
+    align = c("left", "right", "right", "right", "right", "right", "right", "left"),
+    font_size = 8
+  )
+```
+
+*Note.* The per-instar component is the change per additional instar estimated
+within males; the weapon component is the tenth-instar male-versus-female
+difference at matched instar number. Both are supported for every trait, but
+the weapon component predominates in the forelegs, midlegs, eyes and tympanic
+organs, whereas the per-instar component predominates in the hindlegs. The
+decomposition partitions divergence between developmental duration and weapon
+expression; it does not identify the mechanism through which either acts, and
+it is not a test of selection on weaponry, because the instar-matched contrast
+also differs in sex.
+
+{{< pagebreak >}}
+
+**Table S19**. Within-group correlations among the five size-adjusted traits,
+consolidated from the upstream correlation table. Under a strict
+resource-allocation trade-off at least some of these pairwise covariances
+should be negative.
+
+```{r}
+#| label: table-s19-sign-audit
+
+sign_audit_display |>
+  supplementary_table(
+    align = c("left", "right", "right", "right", "right", "right", "right"),
+    font_size = 8
+  )
+```
+
+*Note.* No size-adjusted within-group covariance among these traits is
+negative in any group, so there is no evidence of a detectable trade-off. A
+positive-sign audit cannot by itself demonstrate the absence of a cost,
+because variation among individuals in resource acquisition generates
+positive covariance among costly traits even when those traits compete for
+allocation [@vannoordwijk1986].
+
+{{< pagebreak >}}
+
+**Table S20**. Precision of the planned contrasts in body-size-adjusted leg
+length, expressed as minimum detectable effects. The minimum detectable
+effect is the smallest true effect detectable with 80% power at
+$\alpha = 0.05$ given the observed standard error and denominator degrees of
+freedom. Allocation rows are difference-in-differences comparisons of one leg
+pair against the hindleg and are reported as ratio-of-ratios.
+
+```{r}
+#| label: table-s20-precision
+
+precision_leg_display |>
+  supplementary_table(
+    align = c("left", "left", "right", "right", "right", "right"),
+    font_size = 8
+  )
+```
+
+*Note.* The ninth-instar midpoint contrasts are informative nulls: the minimum
+detectable difference is smaller than any effect of biological interest, and
+two-way equivalence testing establishes equivalence to the eighth/tenth
+midpoint within $\pm2.5$% for all three leg pairs.
+
+{{< pagebreak >}}
+
+**Table S21**. Precision of the within-group weapon slopes. Slope units are
+the change in log leg length or log linearised ear size per unit change in log
+composite head size, holding log pronotum length constant. The minimum
+detectable slope is the smallest slope distinguishable from zero with 80%
+power at $\alpha = 0.05$.
+
+```{r}
+#| label: table-s21-weapon-slope-precision
+
+weapon_slope_precision_display |>
+  supplementary_table(
+    align = c("left", "left", "right", "right", "right", "right"),
+    font_size = 8
+  )
+```
+
+*Note.* The male weapon--ear slopes lie at or below the smallest slope this
+design could detect, so the data are uninformative about whether male
+weapon--ear integration is weak or close to zero. The male slopes should not
+be described as demonstrating developmental independence, and the female slope
+cannot be interpreted as a supported female--male difference because the
+group-by-head interaction was not supported.
+
+{{< pagebreak >}}
+
+# Supplementary figures
+
+**Supplementary Figure S1. Within-group correlation matrices of size-adjusted residuals for foreleg, midleg, hindleg, linearized tympanal size and eye length. Head size was excluded because head length contributed to male morph assignment. The omnibus permutation test detected no difference among correlation matrices (p = 0.8475).**
+
+```{r}
+#| label: figure-s1-correlations
+#| out-width: "95%"
+
+knitr::include_graphics(file.path(figures_dir, "group_trait_correlation_matrices.png"))
+```
+
+**Supplementary Figure S2. Individual scores on the first two principal components of the five nonclassification traits after group-specific adjustment to a pronotum length of 7.2 mm. Diamonds show group centroids and ellipses show descriptive 68% normal regions. Parallel analysis retained PC1 but not PC2.**
+
+```{r}
+#| label: figure-s2-pca-scores
+#| out-width: "95%"
+
+knitr::include_graphics(file.path(figures_dir, "pca_group_scores.png"))
+```
+
+{{< pagebreak >}}
+
+**Supplementary Figure S3. Observed pronotum-length distributions by group. The dashed line marks the 7.2-mm reference used for adjusted means and contrasts; it falls within the common observed support of all four groups.**
+
+```{r}
+#| label: figure-s3-body-size
+#| out-width: "95%"
+
+knitr::include_graphics(file.path(figures_dir, "body_size_distributions.png"))
+```
+
+{{< pagebreak >}}
+
+**Supplementary Figure S4. Exploratory display of leg length against a within-group, body-size-adjusted head-size residual. This residual-index plot is descriptive and does not depict the one-stage raw-head model used for the main weapon–leg slopes (Table S3).**
+
+```{r}
+#| label: figure-s4-residual-head-leg
+#| out-width: "95%"
+
+knitr::include_graphics(file.path(figures_dir, "head_leg_compensation.png"))
+```

@@ -162,7 +162,7 @@ Multiplicity sensitivity
 # A tibble: 10 × 5
    analysis                               tier       p_value     p_BH   p_Holm
    <chr>                                  <chr>        <dbl>    <dbl>    <dbl>
- 1 Leg allocation group x leg             Primary   2.22e-55 2.22e-54 2.22e-54
+ 1 Leg allocation group x leg             Primary   2.70e-55 2.70e-54 2.70e-54
  2 Leg allometry body size x group        Secondary 1.53e- 2 5.10e- 2 1.22e- 1
  3 Leg allometry body size x group x leg  Secondary 9.59e- 2 2.36e- 1 6.71e- 1
  4 Raw head size x group x leg            Primary   1.73e- 3 8.66e- 3 1.56e- 2

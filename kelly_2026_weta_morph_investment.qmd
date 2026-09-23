@@ -31,10 +31,9 @@ params:
 ---
 
 <!--
-The model outputs used by this manuscript are in revision_2026/analysis_outputs.
-Regenerate them from revision_2026 with Rscript scripts/run_all.R before
-rendering when the data or analysis scripts change. The older analysis_outputs
-folder contains the superseded random-intercept leg model.
+The model outputs used by this manuscript are in analysis_outputs.
+Regenerate them with Rscript scripts/run_all.R before rendering when the data
+or analysis scripts change.
 -->
 
 ```{r}
@@ -79,13 +78,13 @@ if (dir.exists(work_dir)) {
   )
 }
 
-output_dir  <- file.path(project_dir, "revision_2026", "analysis_outputs", "weta_trait_analysis")
+output_dir  <- file.path(project_dir, "analysis_outputs", "weta_trait_analysis")
 tables_dir  <- file.path(output_dir, "tables")
 figures_dir <- file.path(output_dir, "figures")
 models_dir  <- file.path(output_dir, "models")
 
 required_files <- c(
-  file.path(project_dir, "figure_1.jpg"),
+  file.path(project_dir, "figures", "figure_1.jpg"),
   file.path(tables_dir, "group_descriptive_statistics.csv"),
   file.path(tables_dir, "common_body_size_range.csv"),
   file.path(tables_dir, "joint_leg_model_type3_anova.csv"),
@@ -121,7 +120,7 @@ if (length(missing_files) > 0) {
     paste0(
       "The following analysis outputs are missing:\n",
       paste(missing_files, collapse = "\n"),
-      "\n\nRegenerate the revised analyses with revision_2026/scripts/run_all.R."
+      "\n\nRegenerate the analyses with scripts/run_all.R."
     ),
     call. = FALSE
   )
@@ -1017,7 +1016,7 @@ group_summary |>
 #| fig-cap: "Morphological landmarks used to measure Wellington tree wētā. (a) Dorsal head view showing head length (HL), head width (HW), and eye length (EL). (b) Dorsal pronotum view showing pronotum length. (c–e) Foreleg, midleg, and hindleg, respectively, showing femur and tibia lengths; panel c also indicates the tympanal membrane, whose area was measured by tracing its perimeter. Orange arrows indicate measurement endpoints. Scale bar = 5 mm."
 #| out-width: "100%"
 
-knitr::include_graphics(file.path(project_dir, "figure_1.jpg"))
+knitr::include_graphics(file.path(project_dir, "figures", "figure_1.jpg"))
 ```
 
 {{< pagebreak >}}
@@ -1032,7 +1031,7 @@ adjusted_trait_plot <- dplyr::bind_rows(
     dplyr::transmute(group, trait = paste0(leg, " length (mm)"),
                      estimate = predicted, lower, upper),
   ear_body_means |>
-    dplyr::transmute(group, trait = "Tympanic organ area (mm²)",
+    dplyr::transmute(group, trait = "Tympanic organ\narea (mm²)",
                      estimate = predicted_ear_area,
                      lower = ear_area_lower, upper = ear_area_upper),
   eye_body_means |>
@@ -1045,7 +1044,7 @@ adjusted_trait_plot <- dplyr::bind_rows(
                    labels = c("Female", "Eighth", "Ninth", "Tenth")),
     trait = factor(trait, levels = c(
       "Foreleg length (mm)", "Midleg length (mm)",
-      "Hindleg length (mm)", "Tympanic organ area (mm²)",
+      "Hindleg length (mm)", "Tympanic organ\narea (mm²)",
       "Eye length (mm)"
     ))
   )
