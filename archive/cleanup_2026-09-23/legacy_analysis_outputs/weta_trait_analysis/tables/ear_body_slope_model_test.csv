@@ -1,0 +1,2 @@
+analysis,reduced_residual_df,full_residual_df,numerator_df,reduced_RSS,full_RSS,sum_of_squares,F,p_value
+Ear relative to body size: logP_c x group,308,305,3,0.6404904463243586,0.6389238845504847,0.0015665617738739313,0.2492740020029702,0.8618292321184725

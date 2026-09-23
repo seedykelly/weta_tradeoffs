@@ -1,0 +1,16 @@
+{
+  "permission": {
+    "executeCode": {
+      "*": "allow"
+    },
+    "read": {
+      "*.qmd": "allow"
+    },
+    "edit": {
+      "*.qmd": "allow"
+    },
+    "bash": {
+      "python3 *": "allow"
+    }
+  }
+}

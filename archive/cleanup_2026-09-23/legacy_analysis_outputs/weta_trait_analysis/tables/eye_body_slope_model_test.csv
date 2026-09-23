@@ -1,0 +1,2 @@
+analysis,reduced_residual_df,full_residual_df,numerator_df,reduced_RSS,full_RSS,sum_of_squares,F,p_value
+Eye relative to body size: logP_c x group,308,305,3,0.912457787469797,0.9068359656833769,0.0056218217864201225,0.6302704163135687,0.5959623161748393

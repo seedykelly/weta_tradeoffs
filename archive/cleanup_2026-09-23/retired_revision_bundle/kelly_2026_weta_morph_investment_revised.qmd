@@ -1,0 +1,1427 @@
+---
+title: "Coordinated locomotory and sensory divergence across alternative mating strategies in Wellington tree wētā"
+author:
+  - name: Clint D. Kelly
+    affiliations:
+      - ref: cdk
+    corresponding: true
+    email: kelly.clint@uqam.ca
+    orcid: 0000-0002-0693-7211
+
+affiliations:
+  - id: cdk
+    name: Département des Sciences biologiques, Université du Québec à Montréal, Montréal, Canada
+
+format:
+  docx:
+    reference-doc: word-style-template.docx
+    toc: false
+    number-sections: true
+bibliography: Bibliography.bib
+nocite: |
+  @*
+execute:
+  echo: false
+  warning: false
+  message: false
+---
+
+*Département des Sciences biologiques, Université du Québec à Montréal, Montréal, Canada*
+
+*Correspondence: kelly.clint@uqam.ca; ORCID: 0000-0002-0693-7211*
+
+<!--
+This revision is self-contained. Analysis outputs, Bibliography.bib and the
+Word reference document are stored beside this file.
+-->
+
+```{r}
+#| label: setup
+#| include: false
+
+library(tidyverse)
+library(knitr)
+library(flextable)
+
+alpha       <- 0.05
+project_dir <- normalizePath(getwd())
+output_dir  <- file.path(project_dir, "analysis_outputs", "weta_trait_analysis")
+tables_dir  <- file.path(output_dir, "tables")
+figures_dir <- file.path(output_dir, "figures")
+models_dir  <- file.path(output_dir, "models")
+
+# Prefer figures regenerated beside this manuscript when available. This keeps
+# the rendered copy self-contained and ensures complete publication labels.
+local_figures_dir <- file.path(
+  getwd(),
+  "analysis_outputs",
+  "weta_trait_analysis",
+  "figures"
+)
+if (dir.exists(local_figures_dir)) {
+  figures_dir <- local_figures_dir
+}
+repeatability_dir <- file.path(project_dir, "analysis_outputs", "repeatability")
+
+required_files <- c(
+  file.path(tables_dir, "group_descriptive_statistics.csv"),
+  file.path(tables_dir, "common_body_size_range.csv"),
+  file.path(tables_dir, "joint_leg_model_type3_anova.csv"),
+  file.path(tables_dir, "joint_leg_covariance_model_comparison.csv"),
+  file.path(tables_dir, "joint_adjusted_leg_means.csv"),
+  file.path(tables_dir, "joint_leg_males_vs_female.csv"),
+  file.path(tables_dir, "joint_leg_strategy_contrasts.csv"),
+  file.path(tables_dir, "joint_anterior_posterior_difference_contrasts.csv"),
+  file.path(tables_dir, "ear_body_slope_model_test.csv"),
+  file.path(tables_dir, "ear_body_adjusted_group_means.csv"),
+  file.path(tables_dir, "ear_body_all_pairwise_group_contrasts.csv"),
+  file.path(tables_dir, "ear_body_strategy_contrasts.csv"),
+  file.path(tables_dir, "eye_body_slope_model_test.csv"),
+  file.path(tables_dir, "eye_body_adjusted_group_means.csv"),
+  file.path(tables_dir, "eye_body_all_pairwise_group_contrasts.csv"),
+  file.path(tables_dir, "eye_body_strategy_contrasts.csv"),
+  file.path(tables_dir, "pca_parallel_analysis.csv"),
+  file.path(tables_dir, "pca_loadings.csv"),
+  file.path(tables_dir, "pca_group_centroids.csv"),
+  file.path(tables_dir, "pca_six_trait_sensitivity_parallel_analysis.csv"),
+  file.path(tables_dir, "pca_classification_sensitivity_variance.csv"),
+  file.path(tables_dir, "covariance_matrix_omnibus_tests.csv"),
+  file.path(tables_dir, "covariance_six_trait_sensitivity_omnibus.csv"),
+  file.path(tables_dir, "female_reference_multivariate_model_tests.csv"),
+  file.path(tables_dir, "female_reference_vector_components.csv"),
+  file.path(tables_dir, "female_reference_vector_magnitudes.csv"),
+  file.path(tables_dir, "female_reference_vector_angles.csv"),
+  file.path(tables_dir, "female_reference_magnitude_differences.csv"),
+  file.path(tables_dir, "female_reference_rank_one_tests.csv"),
+  file.path(tables_dir, "head_leg_raw_type3_anova.csv"),
+  file.path(tables_dir, "head_leg_raw_slopes.csv"),
+  file.path(tables_dir, "head_leg_raw_strategy_slope_contrasts.csv"),
+  file.path(tables_dir, "ear_head_raw_model_test.csv"),
+  file.path(tables_dir, "ear_head_raw_slopes.csv"),
+  file.path(tables_dir, "eye_group_after_head_test.csv"),
+  file.path(tables_dir, "eye_head_increment_test.csv"),
+  file.path(tables_dir, "eye_classification_sensitivity.csv"),
+  file.path(tables_dir, "leg_intermediacy_equivalence.csv"),
+  file.path(tables_dir, "sensory_intermediacy_equivalence.csv"),
+  file.path(tables_dir, "weapon_ear_equivalence.csv"),
+  file.path(tables_dir, "morph_frequency_tests.csv"),
+  file.path(tables_dir, "morph_classification_summary.csv"),
+  file.path(tables_dir, "analysis_hierarchy.csv"),
+  file.path(figures_dir, "pca_parallel_analysis.png"),
+  file.path(figures_dir, "group_trait_correlation_matrices.png"),
+  file.path(figures_dir, "female_reference_contrast_vectors.png"),
+  file.path(figures_dir, "adjusted_trait_means_combined.png"),
+  file.path(repeatability_dir, "measurement_repeatability_robustness.csv"),
+  file.path(repeatability_dir, "measurement_round_effects.csv"),
+  file.path(repeatability_dir, "measurement_round_pairwise_diagnostics.csv"),
+  file.path(repeatability_dir, "measurement_order_effects.csv")
+)
+
+missing_files <- required_files[!file.exists(required_files)]
+if (length(missing_files) > 0) {
+  stop(
+    paste0(
+      "The following analysis outputs are missing:\n",
+      paste(missing_files, collapse = "\n"),
+      "\n\nRun scripts/run_all.R before rendering this QMD."
+    ),
+    call. = FALSE
+  )
+}
+
+# Convert complete or legacy manuscript labels back to the stable internal
+# codes used by the Results-section filters. This makes the QMD compatible
+# with CSV outputs produced before or after the labels were expanded.
+morph_code <- function(x) {
+  x <- as.character(x)
+
+  x |>
+    stringr::str_replace_all(
+      stringr::regex(
+        "(?:\\b(?:8th|eight|eighth)(?:[-\\s]+instar)?\\b|^8$|\\b8[-\\s]+instar\\b)",
+        ignore_case = TRUE
+      ),
+      "eighth"
+    ) |>
+    stringr::str_replace_all(
+      stringr::regex(
+        "(?:\\b(?:9th|nine|ninth)(?:[-\\s]+instar)?\\b|^9$|\\b9[-\\s]+instar\\b)",
+        ignore_case = TRUE
+      ),
+      "ninth"
+    ) |>
+    stringr::str_replace_all(
+      stringr::regex(
+        "(?:\\b(?:10th|ten|tenth)(?:[-\\s]+instar)?\\b|^10$|\\b10[-\\s]+instar\\b)",
+        ignore_case = TRUE
+      ),
+      "tenth"
+    ) |>
+    stringr::str_replace_all(
+      stringr::regex("\\bfemale(?:s)?\\b", ignore_case = TRUE),
+      "female"
+    )
+}
+
+# Convert internal or legacy morph codes to complete manuscript labels.
+# This function accepts labels from old and new CSV outputs.
+morph_label <- function(x) {
+  x <- as.character(x)
+
+  x |>
+    stringr::str_replace_all(
+      stringr::regex(
+        "(?:\\b(?:8th|eight|eighth)(?:[-\\s]+instar)?\\b|^8$|\\b8[-\\s]+instar\\b)",
+        ignore_case = TRUE
+      ),
+      "Eighth instar"
+    ) |>
+    stringr::str_replace_all(
+      stringr::regex(
+        "(?:\\b(?:9th|nine|ninth)(?:[-\\s]+instar)?\\b|^9$|\\b9[-\\s]+instar\\b)",
+        ignore_case = TRUE
+      ),
+      "Ninth instar"
+    ) |>
+    stringr::str_replace_all(
+      stringr::regex(
+        "(?:\\b(?:10th|ten|tenth)(?:[-\\s]+instar)?\\b|^10$|\\b10[-\\s]+instar\\b)",
+        ignore_case = TRUE
+      ),
+      "Tenth instar"
+    ) |>
+    stringr::str_replace_all(
+      stringr::regex("\\bfemale(?:s)?\\b", ignore_case = TRUE),
+      "Female"
+    )
+}
+
+# Apply complete labels to every character or factor column immediately
+# before the table is sent to flextable. This is the final safeguard that
+# prevents bare labels such as Eighth, ninth, or tenth in any table.
+normalize_table_labels <- function(x) {
+  x <- as.data.frame(x)
+
+  x[] <- lapply(
+    x,
+    function(column) {
+      if (is.character(column) || is.factor(column)) {
+        morph_label(column)
+      } else {
+        column
+      }
+    }
+  )
+
+  x
+}
+
+read_result <- function(filename) {
+  readr::read_csv(
+    file.path(tables_dir, filename),
+    show_col_types = FALSE
+  ) |>
+    dplyr::mutate(
+      dplyr::across(
+        where(is.character),
+        morph_code
+      )
+    )
+}
+
+read_repeatability_result <- function(filename) {
+  readr::read_csv(
+    file.path(repeatability_dir, filename),
+    show_col_types = FALSE
+  )
+}
+
+format_text_list <- function(x) {
+  if (length(x) == 0) return("")
+  if (length(x) == 1) return(x)
+  if (length(x) == 2) return(paste(x, collapse = " and "))
+  paste0(paste(x[-length(x)], collapse = ", "), " and ", x[length(x)])
+}
+
+fmt_num <- function(x, digits = 2) {
+  formatC(x, format = "f", digits = digits)
+}
+
+fmt_p <- function(p, digits = 3) {
+  if (is.na(p)) return("p = NA")
+  if (p < 0.001) return("p < 0.001")
+  paste0("p = ", formatC(p, format = "f", digits = digits))
+}
+
+
+# Format main manuscript tables as native Word tables. Captions are ordinary
+# manuscript paragraphs rather than Quarto table cross-references; this avoids
+# the caption-only output produced when flextable and tbl-cap are combined.
+manuscript_table <- function(x, align = NULL) {
+  x <- normalize_table_labels(x)
+
+  rule <- officer::fp_border(color = "black", width = 0.75)
+  ft <- flextable::flextable(x) |>
+    flextable::font(fontname = "Times New Roman", part = "all") |>
+    flextable::fontsize(size = 9, part = "all") |>
+    flextable::border_remove() |>
+    flextable::bold(part = "header") |>
+    flextable::hline_top(border = rule, part = "header") |>
+    flextable::hline_bottom(border = rule, part = "header") |>
+    flextable::hline_bottom(border = rule, part = "body") |>
+    flextable::padding(padding = 2, part = "all") |>
+    flextable::autofit() |>
+    flextable::set_table_properties(
+      layout = "autofit",
+      width = 1,
+      opts_word = list(split = FALSE, repeat_headers = TRUE)
+    )
+
+  if (!is.null(align)) {
+    align_key <- c(
+      l = "left", left = "left",
+      c = "center", centre = "center", center = "center",
+      r = "right", right = "right",
+      j = "justify", justify = "justify"
+    )
+    align <- unname(align_key[tolower(align)])
+    if (length(align) != ncol(x) || anyNA(align)) {
+      stop("Table alignment must contain one valid entry per column.", call. = FALSE)
+    }
+    for (j in seq_along(align)) {
+      ft <- flextable::align(ft, j = j, align = align[[j]], part = "all")
+    }
+  }
+
+  ft
+}
+
+# Format Supplementary Table S1 for the portrait Word layout. The grouped
+# header and fixed column widths keep all model and agreement summaries on one
+# page-width table while preserving four-decimal repeatability estimates.
+supplementary_table <- function(
+    x,
+    widths,
+    align = NULL,
+    spanner_values = NULL,
+    spanner_widths = NULL
+) {
+  x <- normalize_table_labels(x)
+
+  grid_rule <- officer::fp_border(color = "#B7B7B7", width = 0.5)
+  outer_rule <- officer::fp_border(color = "#7F7F7F", width = 0.75)
+
+  ft <- flextable::flextable(x)
+
+  if (!is.null(spanner_values)) {
+    ft <- flextable::add_header_row(
+      ft,
+      values = spanner_values,
+      colwidths = spanner_widths,
+      top = TRUE
+    )
+  }
+
+  ft <- ft |>
+    flextable::font(fontname = "Times New Roman", part = "all") |>
+    flextable::fontsize(size = 8.5, part = "all") |>
+    flextable::bold(part = "header") |>
+    flextable::bg(bg = "#D9E2F3", part = "header") |>
+    flextable::border_remove() |>
+    flextable::border_outer(border = outer_rule, part = "all") |>
+    flextable::border_inner_h(border = grid_rule, part = "all") |>
+    flextable::border_inner_v(border = grid_rule, part = "all") |>
+    flextable::padding(padding = 2, part = "all") |>
+    flextable::valign(valign = "center", part = "all") |>
+    flextable::width(j = seq_along(widths), width = widths) |>
+    flextable::set_table_properties(
+      layout = "fixed",
+      width = 1,
+      opts_word = list(split = FALSE, repeat_headers = TRUE)
+    )
+
+  if (nrow(x) >= 2) {
+    ft <- flextable::bg(
+      ft,
+      i = seq(2, nrow(x), by = 2),
+      bg = "#F3F6F9",
+      part = "body"
+    )
+  }
+
+  if (!is.null(align)) {
+    for (j in seq_along(align)) {
+      ft <- flextable::align(
+        ft,
+        j = j,
+        align = align[[j]],
+        part = "all"
+      )
+    }
+  }
+
+  ft
+}
+
+# Format an F-test from the joint leg ANOVA (columns already renamed in setup).
+fmt_f <- function(row, digits = 2) {
+  paste0(
+    "F(", fmt_num(row$num_df, 0), ", ", fmt_num(row$den_df, 2), ") = ",
+    fmt_num(row$f_value, digits), ", ", fmt_p(row$p_value)
+  )
+}
+
+# Format an F-test from a nested-model comparison table
+# (columns: numerator_df, full_residual_df, F, p_value).
+fmt_f_nested <- function(row, digits = 2) {
+  residual_df <- if ("full_residual_df" %in% names(row)) {
+    row$full_residual_df
+  } else {
+    row$residual_df
+  }
+  paste0(
+    "F(", fmt_num(row$numerator_df, 0), ", ",
+    fmt_num(residual_df, 0), ") = ",
+    fmt_num(row$F, digits), ", ", fmt_p(row$p_value)
+  )
+}
+
+# Format an F-test from a Type III ANOVA table
+# (columns: NumDF, DenDF, `F value`, `Pr(>F)`).
+fmt_f_anova <- function(row, digits = 2) {
+  paste0(
+    "F(", fmt_num(row$NumDF, 0), ", ",
+    fmt_num(row$DenDF, 1), ") = ",
+    fmt_num(row$`F value`, digits), ", ", fmt_p(row$`Pr(>F)`)
+  )
+}
+
+get_term <- function(tab, term_name) {
+  out <- tab |> filter(.data$term == term_name)
+  if (nrow(out) != 1) stop("Could not uniquely locate model term: ", term_name, call. = FALSE)
+  out
+}
+
+get_vs_female <- function(tab, group_name, leg_name = NULL) {
+  out <- tab |>
+    filter(
+      stringr::str_detect(
+        .data$contrast,
+        stringr::regex(
+          paste0("^", group_name, "\\s*-\\s*female$"),
+          ignore_case = TRUE
+        )
+      )
+    )
+  if (!is.null(leg_name)) out <- out |> filter(.data$leg == leg_name)
+  if (nrow(out) != 1) {
+    stop(
+      "Could not uniquely locate contrast for ", group_name,
+      if (!is.null(leg_name)) paste0(" within ", leg_name) else "",
+      call. = FALSE
+    )
+  }
+  out
+}
+
+effect_text <- function(row, positive = "longer", negative = "shorter") {
+  pct <- row$percent_difference
+  direction <- ifelse(pct >= 0, positive, negative)
+  paste0(
+    fmt_num(abs(pct), 1), "% ", direction,
+    " (Holm-adjusted ", fmt_p(row$p.value), ")"
+  )
+}
+
+group_labels <- c(
+  eighth = "Eighth-instar males",
+  ninth  = "Ninth-instar males",
+  tenth  = "Tenth-instar males"
+)
+
+describe_vs_female <- function(
+    tab,
+    percent_column = "percent_difference",
+    positive = "larger",
+    negative = "smaller"
+) {
+  tab <- tab |>
+    filter(stringr::str_detect(.data$contrast, "female")) |>
+    mutate(
+      group_key   = str_trim(str_remove(.data$contrast, "\\s*-\\s*female$")),
+      group_label = unname(group_labels[.data$group_key]),
+      pct         = .data[[percent_column]],
+      direction   = if_else(.data$pct >= 0, positive, negative),
+      clause      = paste0(
+        .data$group_label, " were ", fmt_num(abs(.data$pct), 1), "% ",
+        .data$direction, " than females (Holm-adjusted ",
+        map_chr(.data$p.value, fmt_p), ")"
+      )
+    )
+  paste(tab$clause, collapse = "; ")
+}
+
+# ── Core tables ──────────────────────────────────────────────────────────────
+group_summary    <- read_result("group_descriptive_statistics.csv")
+common_body_size <- read_result("common_body_size_range.csv")
+
+leg_anova <- read_result("joint_leg_model_type3_anova.csv") |>
+  rename(
+    sum_sq  = `Sum Sq`,
+    mean_sq = `Mean Sq`,
+    num_df  = NumDF,
+    den_df  = DenDF,
+    f_value = `F value`,
+    p_value = `Pr(>F)`
+  )
+
+leg_covariance_comparison <- read_result(
+  "joint_leg_covariance_model_comparison.csv"
+)
+leg_covariance_unstructured <- leg_covariance_comparison |>
+  filter(.data$covariance_model == "mod_leg_allocation")
+leg_covariance_lrt <- leg_covariance_unstructured$L.Ratio
+leg_covariance_lrt_p <- leg_covariance_unstructured$`p-value`
+
+adjusted_leg_means      <- read_result("joint_adjusted_leg_means.csv")
+leg_vs_female           <- read_result("joint_leg_males_vs_female.csv")
+leg_strategy            <- read_result("joint_leg_strategy_contrasts.csv")
+alloc_diff              <- read_result("joint_anterior_posterior_difference_contrasts.csv")
+
+hl_anova  <- read_result("head_leg_raw_type3_anova.csv")
+hl_slopes <- read_result("head_leg_raw_slopes.csv")
+hl_strategy_contrasts <- read_result(
+  "head_leg_raw_strategy_slope_contrasts.csv"
+)
+
+ear_body_test  <- read_result("ear_body_slope_model_test.csv")
+ear_body_means <- read_result("ear_body_adjusted_group_means.csv")
+ear_body_all_pairs <- read_result("ear_body_all_pairwise_group_contrasts.csv")
+ear_body_strat <- read_result("ear_body_strategy_contrasts.csv")
+
+eye_body_test  <- read_result("eye_body_slope_model_test.csv")
+eye_body_means <- read_result("eye_body_adjusted_group_means.csv")
+eye_body_all_pairs <- read_result("eye_body_all_pairwise_group_contrasts.csv")
+eye_body_strat <- read_result("eye_body_strategy_contrasts.csv")
+
+ear_weapon_test   <- read_result("ear_head_raw_model_test.csv")
+ear_weapon_slopes <- read_result("ear_head_raw_slopes.csv")
+
+pca_parallel          <- read_result("pca_parallel_analysis.csv")
+pca_loadings          <- read_result("pca_loadings.csv")
+pca_centroids         <- read_result("pca_group_centroids.csv")
+pca_six_sensitivity <- read_result(
+  "pca_six_trait_sensitivity_parallel_analysis.csv"
+)
+pca_classification_sensitivity <- read_result(
+  "pca_classification_sensitivity_variance.csv"
+)
+covariance_omnibus    <- read_result("covariance_matrix_omnibus_tests.csv")
+covariance_six_sensitivity <- read_result(
+  "covariance_six_trait_sensitivity_omnibus.csv"
+)
+female_reference_tests <- read_result("female_reference_multivariate_model_tests.csv")
+female_reference_components <- read_result("female_reference_vector_components.csv")
+female_reference_magnitudes <- read_result("female_reference_vector_magnitudes.csv")
+female_reference_angles <- read_result("female_reference_vector_angles.csv")
+female_reference_magnitude_differences <- read_result("female_reference_magnitude_differences.csv")
+female_reference_rank_one <- read_result("female_reference_rank_one_tests.csv")
+eye_group_after_head  <- read_result("eye_group_after_head_test.csv")
+eye_head_increment    <- read_result("eye_head_increment_test.csv")
+eye_classification_sensitivity <- read_result("eye_classification_sensitivity.csv")
+leg_equivalence       <- read_result("leg_intermediacy_equivalence.csv")
+sensory_equivalence   <- read_result("sensory_intermediacy_equivalence.csv")
+weapon_ear_equivalence <- read_result("weapon_ear_equivalence.csv")
+morph_frequency_tests <- read_result("morph_frequency_tests.csv")
+morph_classification  <- read_result("morph_classification_summary.csv")
+analysis_hierarchy    <- read_result("analysis_hierarchy.csv")
+
+repeatability_all <- read_repeatability_result(
+  "measurement_repeatability_robustness.csv"
+)
+round_effects <- read_repeatability_result("measurement_round_effects.csv")
+round_pairwise <- read_repeatability_result(
+  "measurement_round_pairwise_diagnostics.csv"
+)
+order_effects <- read_repeatability_result("measurement_order_effects.csv")
+
+repeatability_primary <- repeatability_all |>
+  filter(model == "primary_unadjusted")
+
+repeatability_morph_adjusted <- repeatability_all |>
+  filter(model == "morph_adjusted")
+
+repeatability_morph_round_adjusted <- repeatability_all |>
+  filter(model == "morph_and_round_adjusted")
+
+primary_low <- repeatability_primary |> slice_min(R, n = 1, with_ties = FALSE)
+primary_high <- repeatability_primary |> slice_max(R, n = 1, with_ties = FALSE)
+morph_low <- repeatability_morph_adjusted |>
+  slice_min(R, n = 1, with_ties = FALSE)
+
+trait_labels <- c(
+  pronotum = "pronotum length",
+  head_length = "head length",
+  head_width = "head width",
+  forefemur = "forefemur length",
+  foretibia = "foretibia length",
+  ear = "ear area",
+  midfemur = "midfemur length",
+  midtibia = "midtibia length",
+  hindfemur = "hindfemur length",
+  hindtibia = "hindtibia length",
+  eye = "eye length"
+)
+
+supplement_trait_order <- c(
+  "pronotum",
+  "head_length",
+  "head_width",
+  "forefemur",
+  "foretibia",
+  "midfemur",
+  "midtibia",
+  "hindfemur",
+  "hindtibia",
+  "ear",
+  "eye"
+)
+
+repeatability_table_data <- repeatability_primary |>
+  select(
+    trait,
+    pooled_R = R,
+    pooled_lower = CI_lower,
+    pooled_upper = CI_upper
+  ) |>
+  left_join(
+    repeatability_morph_adjusted |>
+      select(
+        trait,
+        morph_R = R,
+        morph_lower = CI_lower,
+        morph_upper = CI_upper
+      ),
+    by = "trait"
+  ) |>
+  left_join(
+    repeatability_morph_round_adjusted |>
+      select(
+        trait,
+        morph_round_R = R,
+        morph_round_lower = CI_lower,
+        morph_round_upper = CI_upper
+      ),
+    by = "trait"
+  ) |>
+  left_join(
+    round_effects |>
+      select(
+        trait,
+        relative_TEM_percent,
+        absolute_agreement_ICC_A1,
+        max_absolute_pairwise_bias_percent,
+        round_P_Holm
+      ),
+    by = "trait"
+  ) |>
+  mutate(
+    trait = factor(trait, levels = supplement_trait_order),
+    Trait = stringr::str_to_sentence(
+      unname(trait_labels[as.character(trait)])
+    ),
+    Pooled = sprintf(
+      "%.4f\n(%.4f\u2013%.4f)", pooled_R, pooled_lower, pooled_upper
+    ),
+    `Morph-adjusted` = sprintf(
+      "%.4f\n(%.4f\u2013%.4f)", morph_R, morph_lower, morph_upper
+    ),
+    `Morph + round` = sprintf(
+      "%.4f\n(%.4f\u2013%.4f)",
+      morph_round_R,
+      morph_round_lower,
+      morph_round_upper
+    ),
+    `rTEM (%)` = sprintf("%.2f", relative_TEM_percent),
+    `ICC(A,1)` = sprintf("%.4f", absolute_agreement_ICC_A1),
+    `Max. bias (%)` = sprintf(
+      "%.2f",
+      max_absolute_pairwise_bias_percent
+    ),
+    `Holm p` = if_else(
+      round_P_Holm < 0.001,
+      "<0.001",
+      sprintf("%.3f", round_P_Holm)
+    )
+  ) |>
+  arrange(trait) |>
+  select(
+    Trait,
+    Pooled,
+    `Morph-adjusted`,
+    `Morph + round`,
+    `rTEM (%)`,
+    `ICC(A,1)`,
+    `Max. bias (%)`,
+    `Holm p`
+  )
+
+round_supported <- round_effects |>
+  filter(round_P_Holm < alpha)
+
+round_supported_text <- format_text_list(
+  unname(trait_labels[round_supported$trait])
+)
+
+round_relative_TEM_min <- min(round_effects$relative_TEM_percent)
+round_relative_TEM_max <- max(round_effects$relative_TEM_percent)
+round_ICC_min <- min(round_effects$absolute_agreement_ICC_A1)
+round_ICC_max <- max(round_effects$absolute_agreement_ICC_A1)
+round_max_Holm_P <- max(round_supported$round_P_Holm)
+max_pairwise_bias_percent <- max(abs(round_pairwise$bias_percent))
+max_non_ear_bias_percent <- round_pairwise |>
+  filter(trait != "ear") |>
+  summarise(value = max(abs(bias_percent))) |>
+  pull(value)
+min_signed_order_q <- min(order_effects$signed_slope_P_BH)
+min_absolute_order_q <- min(order_effects$absolute_error_slope_P_BH)
+
+# ── Sample and body-size summaries ───────────────────────────────────────────
+get_group_row <- function(group_name) {
+  group_summary |> filter(.data$group == group_name) |> slice(1)
+}
+
+female_desc <- get_group_row("female")
+eighth_desc <- get_group_row("eighth")
+ninth_desc  <- get_group_row("ninth")
+tenth_desc  <- get_group_row("tenth")
+total_n     <- sum(group_summary$n)
+
+# ── Joint locomotory model terms ─────────────────────────────────────────────
+leg_group_leg  <- get_term(leg_anova, "group:leg")
+leg_three_way  <- get_term(leg_anova, "logP_c:group:leg")
+leg_size_group <- get_term(leg_anova, "logP_c:group")
+
+# ── Male vs. female leg contrasts at pronotum = 7.2 mm ──────────────────────
+fore_eighth <- get_vs_female(leg_vs_female, "eighth", "Foreleg")
+fore_ninth  <- get_vs_female(leg_vs_female, "ninth",  "Foreleg")
+fore_tenth  <- get_vs_female(leg_vs_female, "tenth",  "Foreleg")
+mid_eighth  <- get_vs_female(leg_vs_female, "eighth", "Midleg")
+mid_ninth   <- get_vs_female(leg_vs_female, "ninth",  "Midleg")
+mid_tenth   <- get_vs_female(leg_vs_female, "tenth",  "Midleg")
+hind_eighth <- get_vs_female(leg_vs_female, "eighth", "Hindleg")
+hind_ninth  <- get_vs_female(leg_vs_female, "ninth",  "Hindleg")
+hind_tenth  <- get_vs_female(leg_vs_female, "tenth",  "Hindleg")
+
+# ── Strategy contrasts: leg size (eighth-tenth, ninth-midpoint, tenth-female) ─
+strat_eighth_tenth_fore <- leg_strategy |>
+  filter(str_detect(.data$contrast, "eighth - tenth"), .data$leg == "Foreleg")
+strat_eighth_tenth_hind <- leg_strategy |>
+  filter(str_detect(.data$contrast, "eighth - tenth"), .data$leg == "Hindleg")
+strat_ninth_mid_fore    <- leg_strategy |>
+  filter(str_detect(.data$contrast, "ninth - midpoint"), .data$leg == "Foreleg")
+strat_tenth_female_fore <- leg_strategy |>
+  filter(str_detect(.data$contrast, "tenth - female"), .data$leg == "Foreleg")
+strat_tenth_female_hind <- leg_strategy |>
+  filter(str_detect(.data$contrast, "tenth - female"), .data$leg == "Hindleg")
+
+# ── Anterior-posterior allocation differences ────────────────────────────────
+# Three rows correspond to tenth - female for each allocation contrast.
+alloc_tenth_female <- alloc_diff |>
+  filter(str_detect(.data$contrast, "tenth - female"))
+
+alloc_tenth_female_fore_hind <- alloc_tenth_female |>
+  filter(
+    str_detect(
+      .data$contrast,
+      regex("foreleg relative to hindleg", ignore_case = TRUE)
+    )
+  )
+
+if (nrow(alloc_tenth_female_fore_hind) != 1) {
+  stop(
+    "Could not uniquely locate the tenth-female foreleg-to-hindleg allocation contrast.",
+    call. = FALSE
+  )
+}
+
+# ── Weapon-leg integration ────────────────────────────────────────────────────
+hl_int_row <- hl_anova |> filter(.data$term == "group:leg:log_head_size")
+
+hl_trend_col <- names(hl_slopes)[str_detect(names(hl_slopes), "\\.trend$")][1]
+
+hl_slopes_display <- hl_slopes |>
+  transmute(
+    Group          = morph_label(group),
+    Leg            = as.character(leg),
+    Slope          = round(.data[[hl_trend_col]], 3),
+    `Lower 95% CI` = round(lower.CL, 3),
+    `Upper 95% CI` = round(upper.CL, 3),
+    `p-value`      = case_when(
+      p.value < 0.001 ~ "<0.001",
+      TRUE            ~ sprintf("%.3f", p.value)
+    )
+  )
+
+# Proportion of slopes clearly positive (lower CI > 0)
+hl_n_positive <- sum(hl_slopes$lower.CL > 0, na.rm = TRUE)
+hl_n_total    <- nrow(hl_slopes)
+
+# ── Sensory: group differences at common body size (Q5) ──────────────────────
+ear_body_strat_tenth_female <- ear_body_strat |>
+  filter(str_detect(.data$contrast, "tenth - female"))
+ear_body_strat_eighth_tenth <- ear_body_strat |>
+  filter(str_detect(.data$contrast, "eighth - tenth"))
+ear_body_strat_ninth_mid    <- ear_body_strat |>
+  filter(str_detect(.data$contrast, "ninth"))
+
+eye_body_strat_tenth_female <- eye_body_strat |>
+  filter(str_detect(.data$contrast, "tenth - female"))
+eye_body_strat_eighth_tenth <- eye_body_strat |>
+  filter(str_detect(.data$contrast, "eighth - tenth"))
+eye_body_strat_ninth_mid    <- eye_body_strat |>
+  filter(str_detect(.data$contrast, "ninth"))
+
+ear_body_means_display <- ear_body_means |>
+  transmute(
+    Group                      = morph_label(group),
+    `Predicted ear area (mm²)` = round(predicted_ear_area, 3),
+    `Lower 95% CI`             = round(ear_area_lower, 3),
+    `Upper 95% CI`             = round(ear_area_upper, 3)
+  )
+
+eye_body_means_display <- eye_body_means |>
+  transmute(
+    Group                        = morph_label(group),
+    `Predicted eye length (mm)`  = round(predicted_eye_length, 3),
+    `Lower 95% CI`               = round(eye_lower, 3),
+    `Upper 95% CI`               = round(eye_upper, 3)
+  )
+
+# ── Reviewer-requested multivariate and sensitivity summaries ────────────────────
+pca_pc1 <- pca_parallel |> filter(.data$component == "PC1")
+pca_pc1_loadings <- pca_loadings |>
+  filter(.data$component == "PC1") |>
+  arrange(desc(.data$loading))
+pca_six_pc1 <- pca_six_sensitivity |> filter(.data$component == "PC1")
+pca_classification_pc1 <- pca_classification_sensitivity |>
+  filter(.data$component == "PC1")
+
+covariance_test <- covariance_omnibus |>
+  filter(.data$matrix_type == "covariance")
+correlation_test <- covariance_omnibus |>
+  filter(.data$matrix_type == "correlation")
+covariance_six_test <- covariance_six_sensitivity |>
+  filter(.data$matrix_type == "covariance")
+correlation_six_test <- covariance_six_sensitivity |>
+  filter(.data$matrix_type == "correlation")
+
+female_reference_primary_tests <- female_reference_tests |>
+  filter(.data$scenario == "standardized_head_excluded")
+female_reference_group_test <- female_reference_primary_tests |>
+  filter(.data$test == "group_adjusted_for_size_common_slopes")
+female_reference_slope_test <- female_reference_primary_tests |>
+  filter(.data$test == "group_by_size_slope_heterogeneity")
+female_reference_male_test <- female_reference_primary_tests |>
+  filter(.data$test == "male_morph_centroids_at_reference_with_group_slopes")
+
+female_reference_primary_magnitudes <- female_reference_magnitudes |>
+  filter(.data$scenario == "standardized_head_excluded")
+female_reference_primary_angles <- female_reference_angles |>
+  filter(.data$scenario == "standardized_head_excluded")
+female_reference_primary_magnitude_differences <-
+  female_reference_magnitude_differences |>
+  filter(.data$scenario == "standardized_head_excluded")
+female_reference_primary_rank_one <- female_reference_rank_one |>
+  filter(.data$scenario == "standardized_head_excluded")
+female_reference_six_rank_one <- female_reference_rank_one |>
+  filter(.data$scenario == "standardized_six")
+female_reference_raw_rank_one <- female_reference_rank_one |>
+  filter(.data$scenario == "raw_log_six")
+
+get_vector_magnitude <- function(vector_name) {
+  female_reference_primary_magnitudes |>
+    filter(.data$vector == vector_name) |>
+    slice(1)
+}
+
+fr_mag_D8 <- get_vector_magnitude("D8")
+fr_mag_D9 <- get_vector_magnitude("D9")
+fr_mag_D10 <- get_vector_magnitude("D10")
+
+female_reference_pairwise_display <- female_reference_primary_angles |>
+  left_join(
+    female_reference_primary_magnitude_differences |>
+      select(
+        comparison,
+        signed_magnitude_difference,
+        magnitude_lower_95 = bootstrap_lower_95,
+        magnitude_upper_95 = bootstrap_upper_95
+      ),
+    by = "comparison"
+  ) |>
+  mutate(
+    Pair = recode(
+      comparison,
+      D8_vs_D9 = "D8–D9",
+      D8_vs_D10 = "D8–D10",
+      D9_vs_D10 = "D9–D10"
+    ),
+    `Angle (°)` = round(angle_degrees, 1),
+    `Lower 95%` = round(bootstrap_lower_95, 1),
+    `Upper 95%` = round(bootstrap_upper_95, 1),
+    `Angle Holm p` = if_else(
+      Holm_p < 0.001,
+      "<0.001",
+      sprintf("%.3f", Holm_p)
+    ),
+    `Δ magnitude` = round(signed_magnitude_difference, 2),
+    `Δ lower 95%` = round(magnitude_lower_95, 2),
+    `Δ upper 95%` = round(magnitude_upper_95, 2)
+  ) |>
+  select(
+    Pair,
+    `Angle (°)`,
+    `Lower 95%`,
+    `Upper 95%`,
+    `Angle Holm p`,
+    `Δ magnitude`,
+    `Δ lower 95%`,
+    `Δ upper 95%`
+  )
+
+fr_D8_hindleg <- female_reference_components |>
+  filter(
+    .data$scenario == "standardized_head_excluded",
+    .data$vector == "D8",
+    .data$trait == "hindleg"
+  ) |>
+  slice(1)
+
+leg_equivalence_2_5 <- leg_equivalence |>
+  filter(.data$equivalence_margin_percent == 2.5)
+sensory_equivalence_2_5 <- sensory_equivalence |>
+  filter(.data$equivalence_margin_percent == 2.5)
+sensory_equivalence_5 <- sensory_equivalence |>
+  filter(.data$equivalence_margin_percent == 5)
+
+leg_eq_fore <- leg_equivalence_2_5 |> filter(.data$leg == "Foreleg")
+leg_eq_mid <- leg_equivalence_2_5 |> filter(.data$leg == "Midleg")
+leg_eq_hind <- leg_equivalence_2_5 |> filter(.data$leg == "Hindleg")
+ear_eq_2_5 <- sensory_equivalence_2_5 |>
+  filter(.data$trait == "Tympanal area")
+ear_eq_5 <- sensory_equivalence_5 |>
+  filter(.data$trait == "Tympanal area")
+eye_eq_2_5 <- sensory_equivalence_2_5 |>
+  filter(.data$trait == "Eye length")
+
+frequency_2026 <- morph_frequency_tests |>
+  filter(str_detect(.data$reference, "2026"))
+frequency_2010 <- morph_frequency_tests |>
+  filter(str_detect(.data$reference, "2010"))
+classification_row <- morph_classification |> slice(1)
+
+eye_head_test <- eye_group_after_head |> slice(1)
+eye_head_increment_row <- eye_head_increment |> slice(1)
+eye_classification_test <- eye_classification_sensitivity |>
+  filter(str_detect(.data$dataset, "Excluded")) |>
+  slice(1)
+
+weapon_ear_equivalence_display <- weapon_ear_equivalence |>
+  transmute(
+    Group = morph_label(group),
+    `Standardized slope` = round(standardized_beta, 3),
+    `Lower 90% CI` = round(lower_90, 3),
+    `Upper 90% CI` = round(upper_90, 3),
+    `Robust slope` = round(robust_beta, 3),
+    `Equivalent within ±0.20` = if_else(equivalent, "Yes", "No")
+  )
+```
+
+# Abstract {.unnumbered}
+
+Alternative mating strategies are often treated as integrated suites of traits, but differences among morph means do not necessarily imply that traits covary differently within morphs. I measured body size, all three leg pairs, eye length and tympanal area in 313 adult Wellington tree wētā (*Hemideina crassidens*): 118 females and 195 males maturing at the eighth, ninth or tenth instar. Size-adjusted leg and sensory dimensions increased from eighth- to tenth-instar males, contrary to the prediction that small searching males would invest most in locomotion and detection. In the primary analysis of five traits not used to assign male morph, female-referenced contrast magnitude increased monotonically across the three male morphs. A rank-one fit captured `r fmt_num(100 * female_reference_primary_rank_one$rank_one_fraction, 1)`% of adjusted contrast variation, but exact rank one was rejected ($p<0.001$) because the eighth-instar vector included a negative hindleg component. Horn parallel analysis retained one component explaining `r fmt_num(pca_pc1$variance_percent, 1)`% of size-adjusted individual variation. No differences were detected among the primary five-trait covariance (`r fmt_p(covariance_test$p_value)`) or correlation matrices (`r fmt_p(correlation_test$p_value)`). Ninth-instar leg lengths were equivalent to the midpoint of the eighth- and tenth-instar means within a 2.5% region, and raw-trait models showed positive weapon–leg integration. The data support a dominant coordinated axis with a localized secondary direction in mean allocation, but provide no evidence that morphs possess different covariance architectures.
+
+**Keywords:** alternative mating strategies; allometry; phenotypic integration; parallel analysis; covariance matrices; equivalence testing; *Hemideina crassidens*
+
+# Introduction
+
+Alternative mating strategies allow males to achieve reproductive success through divergent solutions to competition for mates. In many species, large or well-armed males defend females or reproductive resources, whereas smaller males avoid direct contests and obtain matings through sneaking, satellite behaviour or active searching [@gross1996; @shuster2003; @oliveira2008]. These strategies are frequently associated with conspicuous differences in body size and weaponry, but alternative male phenotypes can differ in many additional aspects of morphology, physiology, behaviour and life history. They are therefore better understood as integrated phenotypes than as otherwise similar males differing only in the exaggerated trait used to classify them [@west-eberhard2003]. Selection should favour coordinated combinations of traits that facilitate the behaviour and ecological circumstances associated with each strategy.
+
+Such phenotypic integration may arise because the development of one structure affects the resources available to others or because selection favours the coordinated expression of functionally complementary traits. Exaggerated sexually selected structures can impose developmental or performance costs that are mitigated by corresponding changes in supporting structures—a process termed secondary sexual trait compensation [@tomkins2005; @husak2011]. Alternatively, investment in an exaggerated structure may occur at the expense of other traits when their development competes for a limited pool of resources [@nijhout1998; @emlen2001a; @moczek2004]. A third possibility is that weapons and supporting structures are positively integrated because phenotypic quality or developmental resources elevate multiple traits [@bonduriansky2003; @tomkins2005]. Developmental switches can also alter trait covariance among morphs [@snell-rood2010].
+
+Most work on morph-specific integration has focused on weapons and the structures that support their use. In horned dung beetles and earwigs, weapon size can be positively integrated with leg morphology [@tomkins2005]. Male rhinoceros beetles with relatively long horns also have relatively long wings and foretibiae, although horn size is unrelated to eye size after body-size adjustment [@mccullough2013]. By contrast, in the male-dimorphic stag beetle *Prosopocoilus inclinatus*, weapon size is integrated with eye size in major males but with foreleg length in minor males [@ito2017]. Weapon exaggeration can therefore be accompanied by coordinated changes in other traits, but the structure of that integration cannot be predicted from weapon size alone.
+
+Locomotor and sensory traits should be especially relevant to alternative mating strategies because males must both locate mating opportunities and gain access to them. The spatial distribution of receptive females can generate a fundamental contrast between remaining with and defending current mates and searching for additional mates [@shuster2003]. Males that patrol widely may benefit from locomotor structures that enhance movement, whereas males that defend females may benefit from appendages that provide support during combat. Sensory demands may also differ. In the desert bee *Centris pallida*, small searching males show greater relative eye investment than large males [@barrett2021; @barrett2026]. If conventional males instead require accurate assessment of rivals or galleries, the direction could reverse.
+
+The Wellington tree wētā, *Hemideina crassidens*, provides an opportunity to address this question. This flightless, nocturnal orthopteran is harem-polygynous, and females shelter communally in tree cavities, hereafter galleries. Males use enlarged heads and mandibles in contests for female-occupied galleries [@kelly2005a; @kelly2006d; @kelly2010]. Males express three genetically polymorphic, irreversible morphotypes through maturation at the eighth, ninth or tenth juvenile instar [@nason2020; @Kelly2024]. Large tenth-instar males commonly fight for galleries, small eighth-instar males may circumvent defenders or search vegetation, and ninth-instar males combine fighting and sneaking according to context [@WilsonKelly2019; @Kelly2025Behaviour]. The three strategies attain similar average reproductive fitness [@nason2020].
+
+Here, I tested whether these alternative male morphotypes differ in the size-adjusted expression of locomotor and sensory traits. I measured the lengths of the fore-, mid- and hindlegs as indices of locomotor morphology, and eye length and the area of the foretibial tympanal organs as indices of visual and auditory investment. Females provide an especially informative reference: females and tenth-instar males both mature at the tenth instar, but females do not express the enlarged male head and mandibles. Their comparison therefore holds terminal instar constant while varying sex-specific weapon expression and is less vulnerable to a purely heterochronic explanation than any comparison among male morphs.
+
+To my knowledge, this study is the first to examine locomotory and sensory morphology jointly across females and every male morphotype in a trimorphic insect expressing genetically polymorphic alternative mating strategies. Previous studies have generally considered a limited set of weapon-associated traits, often in male-dimorphic systems, and have rarely separated differences among group means from differences in within-group trait covariance. I combine female-referenced contrast vectors, parallel analysis, direct matrix comparisons, planned trait contrasts and a one-stage test of weapon–leg covariation. This framework distinguishes coordinated displacement of group means from morph-specific reorganization of phenotypic integration.
+
+I asked four primary questions. First, do searching eighth-instar males possess relatively longer legs or larger sensory structures than gallery-defending tenth-instar males at a common body size, or do these traits instead increase with delayed maturation and weapon expression? Second, can female-referenced mean divergence be described by one shared direction, or is a secondary allocation direction required [@adams2009]? Third, do within-group covariance or correlation matrices differ among groups? Fourth, do ninth-instar males lie near the midpoint of the other male morphs, and do tenth-instar males show an anterior allocation shift relative to same-instar females? A secondary analysis tested whether head and leg size covary positively within groups, as expected under phenotypic integration, or negatively, as expected under a trade-off.
+
+
+# Methods
+
+## Study site and specimen collection
+
+Adult Wellington tree wētā, *Hemideina crassidens*, were collected at night from vegetation on Te Pākeka/Maud Island, New Zealand (41°02′ S, 173°54′ E), during March and April 2016. Te Pākeka/Maud Island is a 309-ha scientific reserve in the Marlborough Sounds that is free of introduced mammalian predators. The supplied file contained 313 unique specimens, and none was excluded at the specimen level. Analyses used all available observations and therefore differed slightly in sample size when measurements were missing: two eighth-instar males lacked complete hindleg measurements, and one of those also lacked a complete midleg measurement, leaving 311 complete specimens for the primary five-trait analyses. Because all specimens were collected in 2016, no between-year model term was applicable. The archive does not record collection microhabitat, gallery-search status or search effort.
+
+Adult male morphotypes were assigned from head length following @kelly2010 and @kelly2026. Because head length determines male morph assignment, group identity is not statistically independent of composite head size; analyses involving head size are therefore designated secondary or sensitivity analyses. The observed head-length ranges place the archived label transitions between 18.497 and 18.516 mm and between 24.147 and 24.154 mm. Individual posterior probabilities were not retained in the analysis archive, so the sample-specific posterior separation and expected misassignment rate cannot be reconstructed. As a reproducibility check, I reassigned males using the published 2010 thresholds of 19.04 and 24.20 mm [@kelly2010]; `r classification_row$n_disagree_legacy_2010` of `r classification_row$male_n` males (`r fmt_num(classification_row$percent_disagree_legacy_2010, 1)`%) changed category. The five-trait PCA and head-adjusted eye conclusions were unchanged when those specimens were excluded. The 2026 mixture analysis retained assignments with posterior probability at least 0.95 [@kelly2026].
+
+Following collection, individuals were euthanized by freezing at −20 °C. Each specimen was subsequently dissected to remove the head, pronotum, both forelegs, both midlegs and both hindlegs. All structures dissected from an individual were placed together in a labelled screw-cap tube to preserve their association with the individual's unique identifier.
+
+<!-- Confirm the applicable institutional animal-care approval, protocol or
+exemption before submission, if required by the journal. -->
+
+## Digital imaging and morphological measurements
+
+Specimens were transported to the Université du Québec à Montréal, where each dissected structure was photographed separately using a Canon EOS 5D Mark IV digital camera fitted with a Canon EF 100 mm f/2.8L IS USM Macro lens and Canon MT-26EX-RT macro flashes. The camera was mounted on a copy stand approximately 40 cm above the specimen, with the camera sensor parallel to the imaging surface. Each specimen was photographed with its identifier and a ruler positioned in the same plane. Images were calibrated from the ruler, and a visible 5-mm scale bar was added using ImageJ.
+
+Morphological measurements were obtained from the calibrated images using Fiji [@Schindelin2012]. All linear traits were measured using the straight-line tool and consistent anatomical landmarks. Ear area was measured by tracing the perimeter of the tympanal membrane using the freehand selection tool.
+
+**Author action before submission:** state whether the primary measurements were made blind to sex or morph. Blinding status is not recorded in the supplied project archive.
+
+The measured linear traits were pronotum length, head length, head width, eye length, and the femur and tibia lengths of the forelegs, midlegs and hindlegs. Left and right structures were measured independently for bilateral traits, and the mean of the two sides was used in the analyses. Total foreleg, midleg and hindleg lengths were calculated as the sum of the corresponding femur and tibia lengths.
+
+## Measurement repeatability
+
+Measurement repeatability was assessed using 48 individuals selected by stratified random sampling across females and the three male morph groups. Every trait was remeasured twice from the original images, yielding three measurements per trait when the original measurement was included. Image order was randomized independently for each measurement round, and previous measurements were not consulted during remeasurement.
+
+Repeatability was estimated separately for each trait using Gaussian linear mixed-effects models with individual identity as a random intercept. The primary, pooled model contained no fixed effects, and the intraclass correlation coefficient was calculated as the proportion of total variance attributable to differences among individuals:
+
+$$
+R =
+\frac{V_{\mathrm{individual}}}
+     {V_{\mathrm{individual}} + V_{\mathrm{residual}}}.
+$$
+
+Repeatability models and bootstrap confidence intervals were fitted using **rptR** [@stoffel2017]. Ninety-five per cent confidence intervals were obtained from 1,000 parametric bootstrap replicates. Because females and the three male morphs differ substantially in mean morphology, each analysis was repeated with morph included as a fixed effect. These adjusted estimates quantify repeatability among individuals after removing average differences among morphs. A further model included both morph and measurement round as fixed effects to estimate consistency after accounting for systematic session differences.
+
+Systematic differences among measurement sessions were tested using a linear mixed-effects model containing measurement round as a three-level fixed effect and individual identity as a random intercept. Omnibus round-effect p-values were adjusted across the 11 traits using both Benjamini--Hochberg and Holm procedures, with the more conservative Holm-adjusted results used in the text. Pairwise bias was calculated as the mean within-individual difference between a later and an earlier round. Pairwise technical error of measurement was calculated as $\sqrt{\sum d_i^2/(2n)}$, where $d_i$ is the within-individual difference. Overall technical error across the three rounds was the pooled within-individual standard deviation, and relative technical error was calculated as 100 times the technical error divided by the trait mean. Absolute agreement was also summarized using the two-way, single-measure ICC(A,1) among individuals with complete measurements in all three rounds. To test for drift within remeasurement sessions, signed and absolute deviations from the original measurement were regressed on randomized measurement position; these p-values were Benjamini--Hochberg adjusted separately for signed and absolute deviations.
+
+## Statistical analysis
+
+All analyses were conducted in R [@R-base]. Data preparation and visualization were performed using the **tidyverse** [@R-tidyverse]. Ordinary least-squares models were fitted using base R. Repeated-trait generalized least-squares models with explicit within-individual covariance structures were fitted using **nlme** [@R-nlme]. Linear mixed-effects models for measurement-round effects were fitted using **lme4** [@R-lme4] and **lmerTest** [@R-lmerTest]. Estimated marginal means, allometric trends and contrasts were calculated using **emmeans** [@R-emmeans]. Model diagnostics and graphical checks were produced using **performance** [@R-performance], **see** [@R-see] and **broom** [@R-broom]. The R version and package versions used in the analysis were recorded using `sessionInfo()`.
+
+Females and eighth-, ninth- and tenth-instar males were represented by the four levels of a categorical variable termed `group`. Pronotum length was used as the measure of structural body size. Composite head size was calculated as the geometric mean of head length and head width:
+
+$$
+\mathrm{head\ size}
+=
+\sqrt{
+  \mathrm{head\ length}
+  \times
+  \mathrm{head\ width}
+}.
+$$
+
+Because ear size was measured as an area, its square root was taken to express it as a linear dimension before analysis. All continuous morphological variables were then transformed using natural logarithms. Allometric slopes from these log--log models can therefore be interpreted as allometric exponents.
+
+Composite head size is a proxy for weapon investment because the head supports the mandibles used in male contests; the mandibles themselves were not measured in the supplied archive. Accordingly, conclusions from head-involving models concern this proxy and do not substitute for a direct mandible analysis.
+
+Log pronotum length was centred on a pronotum length of 7.2 mm:
+
+$$
+\log P_c
+=
+\log(\mathrm{pronotum})-\log(7.2).
+$$
+
+This reference value lay within the range of pronotum lengths shared by all four groups. Model intercepts and estimated marginal means at $\log P_c=0$ therefore describe individuals with a pronotum length of 7.2 mm and represent interpolation rather than extrapolation.
+
+Before fitting the models, the data were checked for duplicate individual identifiers, unexpected sex or morph labels, missing observations, nonpositive measurements and implausible measurement ranges. Missing observations were excluded separately for each model, and sample sizes could therefore differ among analyses.
+
+### Female-referenced multivariate contrast vectors
+
+To compare the amount and direction of multivariate divergence, I used females as a biologically motivated reference and estimated three two-point phenotypic contrast vectors [@adams2009]. These are cross-sectional group contrasts, not ontogenetic trajectories: the male morphs are alternative terminal states and were not treated as successive stages. Because head length contributed to morph assignment, the primary response matrix excluded head size and contained log total foreleg, midleg and hindleg length, log linearized ear size and log eye length. A six-trait analysis including log composite head size was retained as a sensitivity analysis. Because Euclidean magnitudes and angles depend on trait scale, each response was divided by its pooled residual standard deviation from a trait-specific model containing centred log pronotum. These scale factors were held fixed during randomization.
+
+I fitted the multivariate model $\mathbf{Y}\sim\log P_c\times\mathrm{group}$ and evaluated adjusted group centroids at $\log P_c=0$, corresponding to a pronotum length of 7.2 mm. For male group $g$, the female-referenced vector was
+
+$$
+\mathbf{D}_g=\widehat{\boldsymbol\mu}_g-\widehat{\boldsymbol\mu}_{\mathrm{female}},
+$$
+
+its magnitude was $\lVert\mathbf{D}_g\rVert$, and the angle between vectors $i$ and $j$ was
+
+$$
+\theta_{ij}=\cos^{-1}\!\left(
+\frac{\mathbf{D}_i^{\mathsf T}\mathbf{D}_j}
+{\lVert\mathbf{D}_i\rVert\lVert\mathbf{D}_j\rVert}
+\right).
+$$
+
+Inference used 9,999 randomized residual permutations [@adams2009; @collyer2018]. The shared female centroid was re-estimated once within every randomization rather than treating the same females as three independent starting samples. A constrained rank-one null allowed the three vectors to differ in magnitude while imposing a common direction. Group-specific body-size slopes were retained as nuisance effects, residual rows from the rank-one fit were permuted, and the proportion of design-weighted group-effect variation beyond the first singular dimension was the test statistic. The global rank-one test was the primary test of whether more than one direction was required. Ninety-five per cent confidence intervals for vector magnitudes, angles and signed magnitude differences were obtained from 9,999 group-stratified bootstrap samples. Pair-specific angular tests were retained as supplementary descriptions; standardized and unstandardized six-trait models were sensitivity analyses reported in the main multivariate summary. Female observations were never duplicated, and trajectory-shape statistics were not calculated.
+
+### Multivariate dimensionality and matrix structure
+
+As a complementary individual-level ordination, I performed principal-components analysis on the five primary traits. For each log trait, the group-specific allometric model was used to adjust observations to a pronotum length of 7.2 mm while preserving each group's adjusted centroid; the adjusted traits were then standardized before ordination. The number of retained axes was determined by Horn parallel analysis [@Horn1965] using 9,999 independent column permutations and the 95th percentile of the permuted eigenvalue distribution. A six-trait analysis including head size and an analysis excluding the ten classification-sensitive males were used as sensitivities. This ordination describes the dimensionality of individual variation; the constrained rank-one test above is the direct test of whether adjusted group-mean divergence requires more than one direction. Non-retained components were not interpreted as inferential evidence.
+
+Group-specific covariance structure was evaluated independently of differences in group means. For each primary trait, I obtained residuals from a model containing pronotum, group and their interaction, globally standardized those residuals, and calculated a five-trait covariance matrix and correlation matrix for each group. Omnibus differences were measured as summed squared Frobenius distances from the pooled matrix and tested by 9,999 permutations of group labels. The analysis was repeated with head size included. Pairwise tests, matrix-similarity summaries and rarefaction to 38 specimens per group were retained as supplementary checks. Because labels were permuted after residualization, these are approximate residual-permutation tests rather than exact likelihood tests; failure to reject is reported as no detectable difference, not proof of matrix equality.
+
+### Size-adjusted leg allocation
+
+The primary test of locomotory allocation used a repeated-trait generalized least-squares model. Foreleg, midleg and hindleg measurements were arranged in long format so that each individual contributed as many as three observations. Log leg length was modelled as
+
+$$
+\log(\mathrm{leg\ length})
+\sim
+\log P_c\times\mathrm{group}\times\mathrm{leg}.
+$$
+
+Within-individual dependence was represented by an unstructured $3\times3$ residual covariance matrix, with separate residual variances for fore-, mid- and hindlegs and freely estimated pairwise correlations. This structure allows the covariance of each leg pair to differ rather than imposing compound symmetry. An additional individual-by-leg random intercept is not separately estimable because each individual-by-leg cell contains only one observation. The focal model was fitted by restricted maximum likelihood; fixed effects, estimated marginal means and contrasts used approximate Satterthwaite denominator degrees of freedom from the same fit. An unstructured covariance was strongly preferred to heterogeneous compound symmetry by a likelihood-ratio comparison ($\chi^2_2=`r fmt_num(leg_covariance_lrt, 2)`$, `r fmt_p(leg_covariance_lrt_p)`). Body-size interactions were retained to estimate group means at the common 7.2-mm reference without assuming identical slopes; detailed slope and femur--tibia decompositions were treated as exploratory and retained only in the analysis archive.
+
+Estimated marginal means were calculated separately for each leg pair at a pronotum length of 7.2 mm. Because the response variables were log transformed, adjusted means were exponentiated and are reported on the original scale as geometric means. Contrasts were also exponentiated and are reported as ratios, with values greater than one indicating that the first group named in the contrast had the larger predicted trait.
+
+All pairwise group comparisons were calculated within each leg pair. Three biologically motivated contrasts were also evaluated:
+
+1. eighth-instar versus tenth-instar males;
+2. ninth-instar males versus the midpoint of eighth- and tenth-instar males; and
+3. tenth-instar males versus females.
+
+Additional difference-in-differences contrasts tested whether the tenth-instar male--female difference varied between the foreleg and hindleg, between the midleg and hindleg, and between the mean of the two anterior leg pairs and the hindleg. These contrasts test relative anterior--posterior allocation while holding terminal instar constant.
+
+### Head--leg integration and secondary sexual trait compensation
+
+The secondary sexual trait compensation hypothesis predicts that individuals possessing relatively large heads or weapons should also possess relatively large supporting structures. Earlier exploratory fits used residual head-size indices; because those indices are mean-zero within group and do not propagate uncertainty from the first-stage allometry, they are retained only in the analysis archive and are not used for manuscript inference. Instead, I fitted raw log head size together with body size, group and leg identity in a single repeated-trait generalized least-squares model with the same unstructured within-individual covariance:
+
+$$
+\log(\mathrm{leg\ length}) \sim
+\log P_c\times\mathrm{group}\times\mathrm{leg}
++ \log(\mathrm{head\ size})\times\mathrm{group}\times\mathrm{leg}.
+$$
+
+Group- and leg-specific partial slopes for log head size were estimated using `emtrends()`. Slopes were compared among groups within each leg pair and among leg pairs within each group. A positive slope was interpreted as phenotypic integration consistent with secondary sexual trait compensation and a negative slope as evidence of a morphological trade-off.
+
+### Body-size-adjusted sensory investment
+
+Group differences in ear and eye investment were examined at a common structural body size. Log linearized ear size and log eye length were each modelled as functions of log pronotum length, group and their interaction:
+
+$$
+\log(\mathrm{sensory\ trait})
+\sim
+\log P_c\times\mathrm{group}.
+$$
+
+For each sensory trait, a common-slope model was compared with the group-specific-slope model using a nested-model $F$-test. Group-specific allometric slopes were estimated using `emtrends()`, and estimated marginal means were calculated at a pronotum length of 7.2 mm.
+
+Eye estimates were exponentiated to return them to the original length scale. For the ear, estimated marginal means on the log-linearized scale were transformed back to the original area scale as
+
+$$
+\widehat{\mathrm{ear\ area}}
+=
+\exp(2\widehat{\mu}),
+$$
+
+where $\widehat{\mu}$ is the predicted log linearized ear size. Contrasts in linearized ear size were squared after exponentiation to obtain ratios on the area scale.
+
+Because morph assignment and the weapon proxy both use head dimensions, I also fitted eye length as a function of pronotum, raw composite head size and group. Nested tests quantified the additional contributions of head size and group. There was no common head-size interval across all four groups, so this model is used only as a sensitivity analysis; conditional group means at a common head size are not interpreted.
+
+As a secondary sensitivity analysis, the direct weapon–ear model was
+
+$$
+\log(\mathrm{linearized\ ear\ size}) \sim
+\log P_c\times\mathrm{group}
++ \log(\mathrm{head\ size})\times\mathrm{group}.
+$$
+
+A reduced model containing a common head-size slope was compared with the group-specific-slope model using a nested-model $F$-test. Within-group slopes were standardized and tested for equivalence to the interval −0.20 to 0.20. This standardized small-effect benchmark was specified for the present revision and was not preregistered. This analysis was retained to document why the earlier claim of weapon--ear decoupling was withdrawn; it was not used as primary evidence for mosaic integration.
+
+### Equivalence and sampling sensitivity analyses
+
+Two one-sided tests (TOST) evaluated the prediction that ninth-instar means were equivalent to the midpoint of the eighth- and tenth-instar means. I used ±2.5% and ±5% regions on the natural measurement scale; 90% confidence intervals and TOST p-values are reported. The 2.5% benchmark approximates the largest observed relative technical error (2.57%), and 5% provides a broader benchmark at roughly twice that measurement scale. These are analysis benchmarks rather than previously registered biological thresholds. Ear bounds were converted through the square-root area transformation [@Lakens2017].
+
+Morph frequencies in the archived sample were compared by chi-square tests with the published proportions of high-posterior assignments in the later field sample [@kelly2026] and with the earlier field counts [@kelly2010]. These are comparisons with external empirical compositions, not fitted expectations from an identical sampling protocol, so they diagnose compositional mismatch rather than its cause. Classification, raw-scale, matrix-rarefaction and broader multiplicity checks were retained in the reproducibility archive.
+
+### Contrasts and statistical inference
+
+Estimated marginal means and trends are presented with 95% confidence intervals. The focal repeated-trait models were fitted by restricted maximum likelihood, and approximate Satterthwaite denominator degrees of freedom were used consistently for their omnibus fixed-effect tests, estimated marginal means and contrasts. Measurement-round variance models were fitted by restricted maximum likelihood and likewise used Satterthwaite degrees of freedom.
+
+Holm's sequential procedure was applied separately to explicitly defined families: the 11 measurement-round omnibus tests; the three pairwise vector-angle tests; within each leg or sensory response, six all-pairwise group contrasts, three male-versus-female contrasts and three planned strategy contrasts; the nine planned anterior--posterior difference-in-differences; within each leg, six exploratory group-slope comparisons and three planned weapon--leg slope contrasts; and, within each group, three exploratory among-leg slope comparisons. The family assigned to each reported contrast is included in the corresponding output table. Equivalence tests were not pooled with difference tests and were not multiplicity-adjusted. Statistical significance was evaluated at α = 0.05, but interpretation also considered estimated effect sizes, confidence intervals and the biological direction of each relationship.
+
+### Model diagnostics
+
+Model assumptions were evaluated using graphical checks of residual normality, homogeneity of variance and relationships between residuals and fitted values. Multicollinearity was assessed using variance-inflation diagnostics. Observations were flagged for further inspection when Cook's distance exceeded $4/n$, leverage exceeded $2p/n$, or the absolute standardized residual exceeded 3, where $n$ was the model sample size and $p$ was the number of estimated coefficients. These thresholds were used only as diagnostic screening criteria and did not result in the automatic deletion of observations.
+
+
+# Results
+
+## Measurement repeatability
+
+Repeatability was high for all 11 traits. Pooled estimates ranged from $R = `r fmt_num(primary_low$R, 3)`$ for `r unname(trait_labels[primary_low$trait])` (95% CI `r fmt_num(primary_low$CI_lower, 3)`--`r fmt_num(primary_low$CI_upper, 3)`) to $R = `r fmt_num(primary_high$R, 4)`$ for `r unname(trait_labels[primary_high$trait])` (95% CI `r fmt_num(primary_high$CI_lower, 4)`--`r fmt_num(primary_high$CI_upper, 4)`). Estimates remained high after morph was included as a fixed effect ($R = `r fmt_num(min(repeatability_morph_adjusted$R), 3)`$--$`r fmt_num(max(repeatability_morph_adjusted$R), 3)`$); `r unname(trait_labels[morph_low$trait])` again had the lowest estimate ($R = `r fmt_num(morph_low$R, 3)`$, 95% CI `r fmt_num(morph_low$CI_lower, 3)`--`r fmt_num(morph_low$CI_upper, 3)`). The high pooled estimates therefore did not depend only on the large mean differences among females and the three male morphs.
+
+A measurement-round effect remained supported after Holm adjustment for `r nrow(round_supported)` traits: `r round_supported_text` (all Holm-adjusted $p < 0.001$). The shifts were small in magnitude. Overall relative technical error ranged from `r fmt_num(round_relative_TEM_min, 2)`% to `r fmt_num(round_relative_TEM_max, 2)`%, and absolute-agreement ICC(A,1) values ranged from `r fmt_num(round_ICC_min, 4)` to `r fmt_num(round_ICC_max, 4)`. The largest pairwise bias was `r fmt_num(max_pairwise_bias_percent, 3)`% for ear area; the maximum absolute bias for every other trait was no greater than `r fmt_num(max_non_ear_bias_percent, 3)`%. Randomized measurement position was unrelated to either signed error (minimum Benjamini--Hochberg-adjusted $p = `r fmt_num(min_signed_order_q, 3)`$) or absolute error (minimum adjusted $p = `r fmt_num(min_absolute_order_q, 3)`$). Thus, several traits showed slight session-specific shifts, but measurement error was small and absolute agreement remained high across rounds.
+
+## Sample composition and body-size overlap
+
+The analysis included `r total_n` individuals: `r female_desc$n` females, `r eighth_desc$n` eighth-instar males, `r ninth_desc$n` ninth-instar males, and `r tenth_desc$n` tenth-instar males. Mean pronotum length was `r fmt_num(female_desc$pronotum_mean, 2)` ± `r fmt_num(female_desc$pronotum_sd, 2)` mm in females, `r fmt_num(eighth_desc$pronotum_mean, 2)` ± `r fmt_num(eighth_desc$pronotum_sd, 2)` mm in eighth-instar males, `r fmt_num(ninth_desc$pronotum_mean, 2)` ± `r fmt_num(ninth_desc$pronotum_sd, 2)` mm in ninth-instar males, and `r fmt_num(tenth_desc$pronotum_mean, 2)` ± `r fmt_num(tenth_desc$pronotum_sd, 2)` mm in tenth-instar males. All four groups overlapped in pronotum length from `r fmt_num(common_body_size$common_lower, 2)` to `r fmt_num(common_body_size$common_upper, 2)` mm. The reference pronotum of `r fmt_num(common_body_size$reference_pronotum, 1)` mm used for size-adjusted comparisons therefore lay within the region of common support (Supplementary Figure S3).
+
+The male composition (`r eighth_desc$n` eighth-, `r ninth_desc$n` ninth- and `r tenth_desc$n` tenth-instar males) differed from the proportions among high-posterior assignments reported in the later field sample (χ²(2) = `r fmt_num(frequency_2026$chi_square, 2)`, `r fmt_p(frequency_2026$p_value, 5)`) and from the earlier field composition (χ²(2) = `r fmt_num(frequency_2010$chi_square, 2)`, `r fmt_p(frequency_2010$p_value, 5)`). The present sample therefore contains fewer tenth-instar and more ninth-instar males than expected from either empirical reference. Because the archive does not record search effort or whether galleries were sampled, this test identifies nonrepresentative composition but cannot determine its cause.
+
+Group-specific sample sizes and pronotum summaries are reported in [Table 3](#table-group-summary).
+
+## Multivariate direction, dimensionality and covariance structure
+
+Residual randomization detected strong group separation in the five-trait analysis after body-size adjustment (pseudo-$F_{3,306}=`r fmt_num(female_reference_group_test$pseudo_F, 2)`$, partial $R^2=`r fmt_num(female_reference_group_test$R2_partial, 3)`$, $p<0.001$). The multivariate body-size-by-group interaction was also supported (pseudo-$F_{3,303}=`r fmt_num(female_reference_slope_test$pseudo_F, 2)`$, partial $R^2=`r fmt_num(female_reference_slope_test$R2_partial, 3)`$, $p=`r fmt_num(female_reference_slope_test$p_value, 3)`$), so female-referenced vectors were estimated from the group-specific-slope model at 7.2 mm. Their magnitudes increased from `r fmt_num(fr_mag_D8$magnitude, 2)` standardized units in eighth-instar males (bootstrap 95% CI `r fmt_num(fr_mag_D8$bootstrap_lower_95, 2)`–`r fmt_num(fr_mag_D8$bootstrap_upper_95, 2)`) to `r fmt_num(fr_mag_D9$magnitude, 2)` in ninth-instar males (`r fmt_num(fr_mag_D9$bootstrap_lower_95, 2)`–`r fmt_num(fr_mag_D9$bootstrap_upper_95, 2)`) and `r fmt_num(fr_mag_D10$magnitude, 2)` in tenth-instar males (`r fmt_num(fr_mag_D10$bootstrap_lower_95, 2)`–`r fmt_num(fr_mag_D10$bootstrap_upper_95, 2)`). Bootstrap intervals for all three signed magnitude differences excluded zero ([Figure 1](#fig-female-reference-vectors); Supplementary Table S2).
+
+A rank-one fit captured `r fmt_num(100 * female_reference_primary_rank_one$rank_one_fraction, 1)`% of the design-weighted group-effect variation, but the remaining `r fmt_num(100 * female_reference_primary_rank_one$proportion_beyond_rank_one, 1)`% exceeded the rank-one null expectation (`r fmt_p(female_reference_primary_rank_one$p_value)`; null 95th percentile `r fmt_num(100 * female_reference_primary_rank_one$null_95, 1)`%). The eighth-instar vector's hindleg component was negative (`r fmt_num(fr_D8_hindleg$component, 2)` SD units), unlike its other four components, and accounted for much of this secondary direction. The six-trait sensitivity including head size was similar (rank-one fraction `r fmt_num(100 * female_reference_six_rank_one$rank_one_fraction, 1)`%, `r fmt_p(female_reference_six_rank_one$p_value)`); unstandardized six-trait values increased the fraction to `r fmt_num(100 * female_reference_raw_rank_one$rank_one_fraction, 1)`% but still rejected exact rank one (`r fmt_p(female_reference_raw_rank_one$p_value)`).
+
+The complementary individual-level ordination also supported one dominant axis, although it does not directly test vector parallelism. Parallel analysis retained only PC1: its eigenvalue was `r fmt_num(pca_pc1$observed_eigenvalue, 3)` compared with a null 95th percentile of `r fmt_num(pca_pc1$parallel_95_eigenvalue, 3)`, and it explained `r fmt_num(pca_pc1$variance_percent, 1)`% of variation in the five nonclassification traits ([Figure 2](#fig-pca-parallel); Supplementary Figure S2). Only PC1 was also retained when head size was included (`r fmt_num(pca_six_pc1$variance_percent, 1)`%) and when the ten classification-sensitive males were excluded (`r fmt_num(pca_classification_pc1$variance_percent, 1)`%). Non-retained components were not interpreted.
+
+Direct five-trait matrix comparisons detected no difference among group covariance (`r fmt_p(covariance_test$p_value)`) or correlation matrices (`r fmt_p(correlation_test$p_value)`; Supplementary Figure S1). In the six-trait sensitivity, the covariance-matrix test was weakly supported (`r fmt_p(covariance_six_test$p_value)`), whereas the correlation-matrix test was not (`r fmt_p(correlation_six_test$p_value)`). Thus the only matrix signal depended on including head size, the variable linked to morph classification; the primary analysis provides no detectable evidence that the groups have different non-head covariance architectures.
+
+
+The primary dimensionality and matrix tests, together with their head-including sensitivities, are summarized in [Table 1](#table-multivariate-summary).
+
+## Locomotory morphology
+
+### Relative allocation among leg pairs
+
+The joint repeated-trait generalized least-squares model showed that group differences depended strongly on leg identity (`r fmt_f(leg_group_leg)`). The male developmental groups were therefore not uniformly longer- or shorter-legged than females; the magnitude and direction of group differences varied among foreleg, midleg and hindleg pairs. The body-size-by-group-by-leg interaction was not supported after the within-individual covariance was modelled without compound symmetry (`r fmt_f(leg_three_way)`). Group-specific slope comparisons are retained as exploratory output rather than evidence of morph-specific allometric reprogramming.
+
+At a pronotum length of `r fmt_num(common_body_size$reference_pronotum, 1)` mm, eighth-, ninth-, and tenth-instar males had forelegs that were `r effect_text(fore_eighth)`, `r effect_text(fore_ninth)`, and `r effect_text(fore_tenth)`, respectively, than those of females. Midlegs were `r effect_text(mid_eighth)`, `r effect_text(mid_ninth)`, and `r effect_text(mid_tenth)`, respectively. Hindlegs showed a contrasting pattern: eighth-instar males had hindlegs that were `r effect_text(hind_eighth)`, ninth-instar males had hindlegs that were `r effect_text(hind_ninth)`, and tenth-instar males had hindlegs that were `r effect_text(hind_tenth)` relative to females ([Figure 3](#fig-adjusted-trait-means)). Overall, foreleg enlargement escalated most strongly at the terminal instar, whereas hindleg morphology followed a shallower pattern (see below). The negative eighth-instar hindleg contrast also accounts for much of the angular separation of its female-referenced multivariate vector.
+
+The planned strategy contrasts revealed a consistent size gradient among the male morphs. Across all three leg pairs, tenth-instar males had significantly longer legs than eighth-instar males (foreleg: `r fmt_num(abs(strat_eighth_tenth_fore$percent_difference), 1)`% shorter in eighth-instar males, Holm-adjusted `r fmt_p(strat_eighth_tenth_fore$p.value)`; hindleg: `r fmt_num(abs(strat_eighth_tenth_hind$percent_difference), 1)`% shorter, Holm-adjusted `r fmt_p(strat_eighth_tenth_hind$p.value)`). More importantly, TOST established that ninth-instar means were equivalent to the eighth/tenth midpoint within ±2.5% for forelegs (ratio `r fmt_num(leg_eq_fore$estimate_ratio, 3)`, 90% CI `r fmt_num(leg_eq_fore$lower_90_ratio, 3)`–`r fmt_num(leg_eq_fore$upper_90_ratio, 3)`, TOST `r fmt_p(leg_eq_fore$TOST_p, 4)`), midlegs (`r fmt_num(leg_eq_mid$estimate_ratio, 3)`, `r fmt_num(leg_eq_mid$lower_90_ratio, 3)`–`r fmt_num(leg_eq_mid$upper_90_ratio, 3)`, `r fmt_p(leg_eq_mid$TOST_p, 4)`) and hindlegs (`r fmt_num(leg_eq_hind$estimate_ratio, 3)`, `r fmt_num(leg_eq_hind$lower_90_ratio, 3)`–`r fmt_num(leg_eq_hind$upper_90_ratio, 3)`, `r fmt_p(leg_eq_hind$TOST_p, 4)`). Intermediacy is therefore supported directly rather than inferred from nonsignificance.
+
+The planned tenth-instar male–female comparison showed an anterior allocation shift while holding terminal instar constant. The foreleg-to-hindleg ratio in tenth-instar males exceeded that of females by `r fmt_num(alloc_tenth_female_fore_hind$percent_difference, 1)`% (ratio of ratios = `r fmt_num(alloc_tenth_female_fore_hind$ratio_of_ratios, 2)`, Holm-adjusted `r fmt_p(alloc_tenth_female_fore_hind$p.value)`), and the other two planned anterior–posterior contrasts gave the same directional conclusion (all Holm-adjusted `r fmt_p(max(alloc_tenth_female$p.value))`).
+
+
+The ninth-instar midpoint-equivalence results are summarized in [Table 2](#table-equivalence).
+
+## Weapon–leg integration
+
+The one-stage model included raw log head size together with pronotum, group and leg identity. The partial association was consistently positive: `r hl_n_positive` of `r hl_n_total` group-by-leg combinations had 95% confidence intervals entirely above zero, and no estimated slope was negative. The group-by-leg-by-head interaction was supported (`r fmt_f_anova(hl_int_row)`), indicating heterogeneous magnitudes of weapon–leg integration. The tenth-instar foreleg estimate was the only imprecise slope; the other 11 intervals excluded zero. Planned strategy slope contrasts are reported in Supplementary Table S4. This supporting analysis shows positive weapon–leg integration overall, but it does not establish a simple morph ranking in integration strength.
+
+
+## Sensory morphology
+
+### Group differences at a common body size
+
+Ear size (tympanic organ area) and eye length both differed significantly among groups at a common pronotum length. Allometric slopes for ear size on pronotum length did not differ among groups (`r fmt_f_nested(ear_body_test)`), nor did those for eye length (`r fmt_f_nested(eye_body_test)`), justifying a common-slope model for body-size adjustment in both cases.
+
+At a pronotum length of `r fmt_num(common_body_size$reference_pronotum, 1)` mm, tenth-instar males had tympanal areas that were `r fmt_num(ear_body_strat_tenth_female$area_percent_difference, 1)`% larger than those of females (Holm-adjusted `r fmt_p(ear_body_strat_tenth_female$p.value)`), while eighth-instar males had areas `r fmt_num(abs(ear_body_strat_eighth_tenth$area_percent_difference), 1)`% smaller than tenth-instar males (Holm-adjusted `r fmt_p(ear_body_strat_eighth_tenth$p.value)`). Ninth-instar tympanal area was equivalent to the eighth/tenth midpoint within ±5% (area ratio `r fmt_num(ear_eq_5$estimate_ratio, 3)`, 90% CI `r fmt_num(ear_eq_5$lower_90_ratio, 3)`–`r fmt_num(ear_eq_5$upper_90_ratio, 3)`, TOST `r fmt_p(ear_eq_5$TOST_p, 4)`), but not within ±2.5% (`r fmt_p(ear_eq_2_5$TOST_p)`). Eye length showed a larger gradient: tenth-instar males had eyes `r fmt_num(eye_body_strat_tenth_female$percent_difference, 1)`% longer than females (Holm-adjusted `r fmt_p(eye_body_strat_tenth_female$p.value)`), while eighth-instar males had eyes `r fmt_num(abs(eye_body_strat_eighth_tenth$percent_difference), 1)`% shorter than tenth-instar males (Holm-adjusted `r fmt_p(eye_body_strat_eighth_tenth$p.value)`). Ninth-instar eye length was equivalent to the male midpoint within ±2.5% (ratio `r fmt_num(eye_eq_2_5$estimate_ratio, 3)`, 90% CI `r fmt_num(eye_eq_2_5$lower_90_ratio, 3)`–`r fmt_num(eye_eq_2_5$upper_90_ratio, 3)`, TOST `r fmt_p(eye_eq_2_5$TOST_p, 4)`). Thus both traits paralleled the weapon gradient at common pronotum size ([Figure 3](#fig-adjusted-trait-means)), although the strength of equivalence evidence differed. All six pairwise group contrasts for each sensory trait are reported in Supplementary Table S6.
+
+Head size made a strong additional contribution to eye length after pronotum and group were included (`r fmt_f_nested(eye_head_increment_row)`). Group also remained in the model after head size was added (`r fmt_f_nested(eye_head_test)`), and the classification-exclusion sensitivity gave the same omnibus conclusion (`r fmt_f_nested(eye_classification_test)`). Because the head-size ranges of the four groups do not overlap, this sensitivity partitions statistical contributions but does not justify extrapolated common-head means. It nevertheless shows that the pronotum-adjusted eye gradient cannot be interpreted independently of head size.
+
+### Weapon–sensory covariance
+
+The one-stage weapon–ear sensitivity used raw log head size while controlling for pronotum and group. Slope heterogeneity was not supported (`r fmt_f_nested(ear_weapon_test)`). Male partial-slope estimates were positive but imprecise, and none was equivalent to the revision-defined near-zero interval of ±0.20 (Supplementary Table S5). The data therefore show no weapon–ear trade-off, but they establish neither strong male integration nor developmental decoupling.
+
+## Model diagnostics
+
+Observed and model-predicted trait distributions corresponded closely. Normalized residuals were approximately normally distributed and showed broadly homogeneous variance within leg type, with only minor curvature near the extremes of the fitted ranges. Collinearity remained below conventional concern thresholds, and no observation showed sufficient influence to justify exclusion after the underlying measurements had been checked. The log–log linear models and the repeated-trait generalized least-squares models were therefore retained for inference.
+
+# Discussion
+
+The multivariate pattern was predominantly coordinated but not strictly one-dimensional. In the primary five-trait analysis, which excluded the head variable linked to morph assignment, female-referenced vectors increased monotonically in magnitude from eighth- to tenth-instar males and a rank-one fit accounted for nearly 89% of their adjusted group-effect variation. Direct residual randomization nevertheless rejected exact rank one because the eighth-instar hindleg component opposed the changes in its other traits. This is positive evidence for a localized secondary allocation direction, not an inference from nonsignificance. The searching-and-detection prediction was still not supported: eighth-instar males did not have the largest locomotory or sensory structures.
+
+## One dominant axis with localized allocation differences
+
+Parallel analysis independently retained one dominant component in the five nonclassification traits. The same conclusion held when head size was included and when classification-sensitive males were excluded. Because no later component exceeded its parallel-analysis threshold, those axes are not given biological interpretations. The rank-one result was likewise stable when head size was included and when traits were left on their raw log scales, although the exact variance fraction and angles changed with scale.
+
+The vector and matrix results answer different questions. Vector analysis asks whether adjusted group means diverge in one direction or several; covariance tests ask whether traits covary differently among individuals within groups. The former supported a localized secondary direction, whereas the primary five-trait matrix tests detected no difference in either covariance or correlation structure. A weak covariance result appeared only when head size was restored. The supported claim is therefore mosaic mean allocation within otherwise predominantly coordinated divergence—not demonstrated morph-specific covariance architectures.
+
+## Locomotory divergence and the value of females
+
+The three male morphs formed a consistent gradient in size-adjusted leg length, with tenth-instar males longest and eighth-instar males shortest. Equivalence tests positively established that ninth-instar fore-, mid- and hindlegs lie within 2.5% of the midpoint between the other male morphs. This result is compatible with their behaviourally flexible strategy [@WilsonKelly2019; @Kelly2025Behaviour], but intermediacy could also follow directly from maturation at an intermediate instar and is not by itself evidence of adaptation for flexibility.
+
+The most informative allocation contrast involved tenth-instar males and females. Both complete ten instars, whereas only males express exaggerated weapons. Their difference therefore cannot be attributed simply to one group having passed through an additional moult. Tenth-instar males had disproportionately longer anterior legs, a pattern consistent with possible roles in stability, purchase or manoeuvring during contests [@tomkins2005; @mccullough2013]. Those functions remain hypotheses because the present study measured morphology rather than mechanical performance. Females are not an unselected control, but they provide a stronger reference against the heterochrony alternative than any male-only contrast.
+
+## Weapon integration and sensory interpretation
+
+The raw-trait refit showed positive weapon–leg slopes in every group-by-leg combination, with 11 of 12 confidence intervals excluding zero. This provides no evidence that relatively large weapons are expressed at the expense of locomotory appendages and is consistent with secondary sexual trait compensation [@tomkins2005; @husak2011]. It does not prove an adaptive compensatory mechanism: common resource acquisition, pleiotropy or correlational selection can also produce positive phenotypic covariance.
+
+Tympanal area and eye length increased along the male weapon gradient at common pronotum size, but the eye result requires qualification. Head size explained substantial additional variation and the omnibus group term remained after head size was added. Because the groups do not share common head-size support, conditional pairwise morph differences are not interpreted and this sensitivity analysis cannot assign a causal fraction of eye divergence to head size. It nevertheless shows that the pronotum-adjusted eye gradient is partly associated with variation in the head capsule that bears the eyes.
+
+Weapon–ear slopes were positive but imprecise within male morphs. Crucially, failure to reject a zero slope is not evidence of decoupling: none of the standardized slopes was equivalent to the revision-defined ±0.20 region. The supported statement is therefore narrower—there was no weapon–ear trade-off and no detected slope heterogeneity, but the data cannot distinguish weak positive integration from near-zero association within males.
+
+## Developmental interpretation and limitations
+
+Genetic polymorphism for maturation strategy reduces, but does not eliminate, confounding by developmental condition [@Kelly2024]. The male morphs still differ in the number of instars completed, and a coordinated axis of larger weapons, legs and sensory structures may reflect the cumulative consequences of delayed maturation as well as selection on mating strategy. Common-garden longitudinal measurements across successive instars would be needed to separate these mechanisms.
+
+Several archive limitations restrict inference. Search effort, collection microhabitat and gallery sampling were not recorded. The observed shortage of tenth-instar males relative to two published field compositions is therefore consistent with sampling or ascertainment bias but does not identify its mechanism. Individual posterior morph-assignment probabilities are also missing; the legacy-cutoff sensitivity is reassuring but does not replace a posterior misclassification analysis. The smaller tenth-instar sample limits precision for group-specific slopes.
+
+The study also lacks locomotory, fighting and sensory performance measures, so functional interpretations remain provisional. Most importantly for allocation theory, no testis or gonad mass is present in the supplied data despite specimen dissection. An armament–gonad analysis cannot be reconstructed from the archive; standardized testis mass would be the highest-value additional measurement because it tests the classic reproductive-allocation axis directly. Until such data are available, the present findings address integration among external morphological traits rather than the full reproductive budget.
+
+## Conclusions
+
+Alternative mating phenotypes in Wellington tree wētā diverge chiefly along a shared morphological axis, but female-referenced vectors reveal a supported secondary direction associated with hindleg allocation in eighth-instar males. Relative leg and sensory dimensions generally increase with the male weapon gradient, and weapon and leg size covary positively within groups. The tenth-instar male–female comparison independently reveals an anterior allocation shift while holding terminal instar constant. No difference was detected among the primary five-trait covariance or correlation matrices, and weapon–ear data were too imprecise to establish decoupling. The evidence therefore favours predominantly coordinated divergence with localized mosaic mean allocation rather than distinct morph-specific covariance structures.
+
+# Availability of data and material
+
+The data supporting this study will be made available through the Open Science Framework repository at https://osf.io/jrs28/overview?view_only=7a78f30e724b497ab3bb62ffa1c97e10.
+
+# Code availability
+
+The R code used to reproduce all analyses and figures will be made available in the same Open Science Framework repository.
+
+# Author contributions
+
+CDK collected and analysed the data and wrote the manuscript.
+
+# Funding
+
+The study was funded by a Discovery Grant from the Natural Sciences and Engineering Research Council of Canada (NSERC). **Author action before submission:** add the grant number; it is not retained in the supplied project archive.
+
+# Ethics approval
+
+Specimens were euthanized by freezing at −20 °C before dissection. **Author action before submission:** add the applicable institutional animal-care approval, protocol or exemption (or a statement that formal approval was not required), and confirm whether freezing was the approved or accepted euthanasia method; this information is not retained in the supplied project archive.
+
+# Competing interests
+
+The author declares no competing interests.
+
+# Acknowledgements
+
+I thank New Zealand’s Department of Conservation for study permits, and Roxanne Chassé Bilodeau for trait photography.
+
+{{< pagebreak >}}
+
+# References {.unnumbered}
+
+::: {#refs}
+:::
+
+{{< pagebreak >}}
+
+# Tables {.unnumbered}
+
+**Table 1. Summary of multivariate analyses using the primary five-trait set and their six-trait sensitivities. The primary trait set excludes head size because head length contributed to male morph assignment.**
+
+```{r}
+#| label: table-multivariate-summary
+
+tibble(
+  Analysis = c(
+    "Female-referenced rank-one test",
+    "PCA with parallel analysis",
+    "Covariance-matrix comparison",
+    "Correlation-matrix comparison"
+  ),
+  `Primary: five non-head traits` = c(
+    paste0(
+      fmt_num(100 * female_reference_primary_rank_one$rank_one_fraction, 1),
+      "% rank one; ", fmt_p(female_reference_primary_rank_one$p_value)
+    ),
+    paste0(
+      "PC1 ", fmt_num(pca_pc1$variance_percent, 1),
+      "%; one component retained"
+    ),
+    fmt_p(covariance_test$p_value),
+    fmt_p(correlation_test$p_value)
+  ),
+  `Sensitivity: six traits including head` = c(
+    paste0(
+      fmt_num(100 * female_reference_six_rank_one$rank_one_fraction, 1),
+      "% rank one; ", fmt_p(female_reference_six_rank_one$p_value)
+    ),
+    paste0(
+      "PC1 ", fmt_num(pca_six_pc1$variance_percent, 1),
+      "%; one component retained"
+    ),
+    fmt_p(covariance_six_test$p_value),
+    fmt_p(correlation_six_test$p_value)
+  )
+) |>
+  manuscript_table(align = c("left", "left", "left"))
+```
+
+{{< pagebreak >}}
+
+**Table 2. Equivalence tests of ninth-instar means against the midpoint of eighth- and tenth-instar male means. The ±2.5% region approximates the largest observed relative technical error. Equivalence requires the complete 90% confidence interval to fall within the region.**
+
+```{r}
+#| label: table-equivalence
+
+bind_rows(
+  leg_equivalence_2_5 |>
+    transmute(
+      Trait = leg,
+      Scale = "Length ratio",
+      estimate_ratio,
+      lower_90_ratio,
+      upper_90_ratio,
+      TOST_p,
+      equivalent
+    ),
+  sensory_equivalence_2_5 |>
+    transmute(
+      Trait = trait,
+      Scale = reported_scale,
+      estimate_ratio,
+      lower_90_ratio,
+      upper_90_ratio,
+      TOST_p,
+      equivalent
+    )
+) |>
+  transmute(
+    Trait,
+    Scale,
+    Ratio = round(estimate_ratio, 3),
+    `Lower 90% CI` = round(lower_90_ratio, 3),
+    `Upper 90% CI` = round(upper_90_ratio, 3),
+    `TOST p` = if_else(TOST_p < 0.001, "<0.001", sprintf("%.3f", TOST_p)),
+    `Equivalent within ±2.5%` = if_else(equivalent, "Yes", "No")
+  ) |>
+  manuscript_table(
+    align = c("left", "left", "right", "right", "right", "right", "center")
+  )
+```
+
+{{< pagebreak >}}
+
+**Table 3. Sample sizes and descriptive body-size statistics for females and the three male developmental groups.**
+
+```{r}
+#| label: table-group-summary
+
+group_summary |>
+  transmute(
+    Group              = morph_label(group),
+    `Sample size`      = n,
+    `Pronotum mean`    = round(pronotum_mean, 2),
+    `Pronotum SD`      = round(pronotum_sd, 2),
+    `Pronotum minimum` = round(pronotum_min, 2),
+    `Pronotum maximum` = round(pronotum_max, 2)
+  ) |>
+  manuscript_table(align = c("left", "right", "right", "right", "right", "right"))
+```
+
+{{< pagebreak >}}
+
+# Figures {.unnumbered}
+
+```{r}
+#| label: fig-female-reference-vectors
+#| fig-cap: "Female-referenced multivariate contrast vectors for the five traits not used to assign morph, evaluated at a pronotum length of 7.2 mm. These are cross-sectional contrasts among alternative terminal phenotypes, not developmental trajectories. (A) Descriptive projection of the three vectors onto the first two singular axes of the observed 3 × 5 contrast matrix. (B) Standardized components show the negative eighth-instar hindleg contrast. Inference used a design-weighted rank-one decomposition and residual randomization."
+#| out-width: "100%"
+
+knitr::include_graphics(
+  file.path(figures_dir, "female_reference_contrast_vectors.png")
+)
+```
+
+{{< pagebreak >}}
+
+```{r}
+#| label: fig-pca-parallel
+#| fig-cap: "Observed eigenvalues for the five nonclassification traits and 95th-percentile eigenvalues from 9,999 parallel-analysis permutations after group-specific adjustment to a pronotum length of 7.2 mm. Only PC1 exceeded its permutation threshold."
+#| out-width: "85%"
+
+knitr::include_graphics(file.path(figures_dir, "pca_parallel_analysis.png"))
+```
+
+{{< pagebreak >}}
+
+```{r}
+#| label: fig-adjusted-trait-means
+#| fig-cap: "Adjusted means and 95% confidence intervals for foreleg, midleg, hindleg, tympanal area and eye length at a pronotum length of 7.2 mm. Panels use trait-specific measurement scales."
+#| out-width: "100%"
+
+knitr::include_graphics(
+  file.path(figures_dir, "adjusted_trait_means_combined.png")
+)
+```

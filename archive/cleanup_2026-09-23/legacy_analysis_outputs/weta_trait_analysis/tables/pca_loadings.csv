@@ -1,0 +1,26 @@
+trait,component,loading,retained,trait_set
+Foreleg,PC1,0.5114923534458526,TRUE,five_non_head_traits
+Foreleg,PC2,-0.23495373636607583,FALSE,five_non_head_traits
+Foreleg,PC3,0.047948026606538324,FALSE,five_non_head_traits
+Foreleg,PC4,-0.4066138878515335,FALSE,five_non_head_traits
+Foreleg,PC5,0.7180100605735567,FALSE,five_non_head_traits
+Midleg,PC1,0.5169732073033418,TRUE,five_non_head_traits
+Midleg,PC2,-0.012239704862970916,FALSE,five_non_head_traits
+Midleg,PC3,0.14296769237340826,FALSE,five_non_head_traits
+Midleg,PC4,-0.5112805189241449,FALSE,five_non_head_traits
+Midleg,PC5,-0.6713727448008616,FALSE,five_non_head_traits
+Hindleg,PC1,0.32224866418499537,TRUE,five_non_head_traits
+Hindleg,PC2,0.8321711853404734,FALSE,five_non_head_traits
+Hindleg,PC3,0.36678237416668863,FALSE,five_non_head_traits
+Hindleg,PC4,0.22052042469496017,FALSE,five_non_head_traits
+Hindleg,PC5,0.14313751783868134,FALSE,five_non_head_traits
+Linearized ear,PC1,0.4142821945620965,TRUE,five_non_head_traits
+Linearized ear,PC2,0.1645575505068888,FALSE,five_non_head_traits
+Linearized ear,PC3,-0.8614888056260006,FALSE,five_non_head_traits
+Linearized ear,PC4,0.23820545891295153,FALSE,five_non_head_traits
+Linearized ear,PC5,-0.04884949298756916,FALSE,five_non_head_traits
+Eye,PC1,0.4423124879502256,TRUE,five_non_head_traits
+Eye,PC2,-0.474403691230045,FALSE,five_non_head_traits
+Eye,PC3,0.31712608448958385,FALSE,five_non_head_traits
+Eye,PC4,0.6840221332759209,FALSE,five_non_head_traits
+Eye,PC5,-0.10414205910943469,FALSE,five_non_head_traits

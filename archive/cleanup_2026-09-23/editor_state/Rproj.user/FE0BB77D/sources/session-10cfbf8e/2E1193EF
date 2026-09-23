@@ -1,0 +1,27 @@
+{
+    "id": "2E1193EF",
+    "path": "~/Documents/Research_Admin/research projects/Trait compensation/scripts/weta_trait_analysis.R",
+    "project_path": "scripts/weta_trait_analysis.R",
+    "type": "r_source",
+    "hash": "0",
+    "contents": "",
+    "dirty": false,
+    "created": 1790082587681.0,
+    "source_on_save": false,
+    "relative_order": 2,
+    "properties": {
+        "tempName": "Untitled1",
+        "source_window_id": "",
+        "Source": "Source",
+        "cursorPosition": "489,10",
+        "scrollLine": "111"
+    },
+    "folds": "125|14|164|0|\n165|22|341|0|\n342|17|383|0|\n384|21|486|0|\n656|30|695|0|\n",
+    "lastKnownWriteTime": 1790082507,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1790185846432,
+    "read_only": false,
+    "read_only_alternatives": []
+}

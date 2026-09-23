@@ -1,0 +1,31 @@
+SUPPLEMENT RENDERING INSTRUCTIONS
+==================================
+
+The supplement QMD (kelly_2026_weta_morph_investment_supplement.qmd) requires 
+additional analysis outputs beyond the main repeatability and trait analysis scripts.
+
+MISSING OUTPUTS SUMMARY:
+- Repeatability robustness analyses (4 files in analysis_outputs/repeatability/)
+- Advanced PCA and covariance analyses (14+ files in analysis_outputs/weta_trait_analysis/tables/)
+- Additional sensitivity and equivalence test results (8+ files)
+
+STATUS AS OF 2026-09-21:
+✓ Main manuscript (kelly_2026_weta_morph_investment_updated.docx) renders successfully
+✓ Repeatability analysis completed (measurement_repeatability.csv)
+✓ Trait analysis completed (weta_trait_analysis/ with 100+ output files)
+✗ Supplement supplementary analyses not yet implemented
+
+NEXT STEPS:
+1. The supplement requires additional R code for:
+   - Measurement repeatability robustness tests
+   - Principal component analyses with parallel analysis
+   - Covariance matrix comparisons across morphs
+   - Equivalence and intermediacy tests
+   
+2. Create scripts/run_all.R to coordinate all analyses, or
+3. Update the supplement QMD to make these analyses optional
+
+CURRENT WORKING DIRECTORY:
+/Users/uqam/Documents/Research_Admin/research projects/Trait compensation
+
+All basic analyses are complete and the main manuscript is ready for review.

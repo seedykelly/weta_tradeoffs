@@ -1,0 +1,174 @@
+REVIEWER REANALYSIS SUMMARY
+
+Primary five-trait PCA parallel analysis
+# A tibble: 5 × 6
+  component observed_eigenvalue parallel_95_eigenvalue variance_percent
+  <chr>                   <dbl>                  <dbl>            <dbl>
+1 PC1                    3.43                    1.24            68.7  
+2 PC2                    0.815                   1.12            16.3  
+3 PC3                    0.508                   1.04            10.2  
+4 PC4                    0.200                   0.974            3.99 
+5 PC5                    0.0442                  0.906            0.884
+# ℹ 2 more variables: cumulative_percent <dbl>, retained <lgl>
+# A tibble: 5 × 7
+  component    df residual_df      F  p_value     p_BH   p_Holm
+  <chr>     <int>       <int>  <dbl>    <dbl>    <dbl>    <dbl>
+1 PC1           3         307 190.   1.44e-69 7.19e-69 7.19e-69
+2 PC2           3         307 160.   2.49e-62 6.21e-62 9.94e-62
+3 PC3           3         307   2.93 3.36e- 2 4.20e- 2 6.73e- 2
+4 PC4           3         307   4.38 4.90e- 3 8.17e- 3 1.47e- 2
+5 PC5           3         307   1.45 2.29e- 1 2.29e- 1 2.29e- 1
+
+Six-trait PCA sensitivity
+# A tibble: 6 × 6
+  component observed_eigenvalue parallel_95_eigenvalue variance_percent
+  <chr>                   <dbl>                  <dbl>            <dbl>
+1 PC1                    4.12                    1.27            68.6  
+2 PC2                    1.05                    1.15            17.6  
+3 PC3                    0.512                   1.07             8.54 
+4 PC4                    0.203                   1.00             3.38 
+5 PC5                    0.0761                  0.945            1.27 
+6 PC6                    0.0386                  0.877            0.644
+# ℹ 2 more variables: cumulative_percent <dbl>, retained <lgl>
+
+Primary five-trait covariance/correlation equality
+# A tibble: 2 × 6
+  matrix_type statistic permutations p_value trait_set            analysis_role 
+  <chr>           <dbl>        <int>   <dbl> <chr>                <chr>         
+1 covariance    116.            9999   0.398 five_non_head_traits primary_omnib…
+2 correlation     0.360         9999   0.848 five_non_head_traits primary_omnib…
+# A tibble: 12 × 9
+   matrix_type group_1 group_2 frobenius_distance p_value  p_BH p_Holm trait_set
+   <chr>       <chr>   <chr>                <dbl>   <dbl> <dbl>  <dbl> <chr>    
+ 1 covariance  Female  Eighth…              0.989   0.314 0.471  1     five_non…
+ 2 covariance  Female  Ninth …              0.994   0.298 0.471  1     five_non…
+ 3 covariance  Female  Tenth …              0.924   0.505 0.606  1     five_non…
+ 4 covariance  Eighth… Ninth …              0.585   0.929 0.929  1     five_non…
+ 5 covariance  Eighth… Tenth …              1.55    0.115 0.471  0.692 five_non…
+ 6 covariance  Ninth … Tenth …              1.42    0.199 0.471  0.996 five_non…
+ 7 correlation Female  Eighth…              0.278   0.935 0.935  1     five_non…
+ 8 correlation Female  Ninth …              0.325   0.804 0.935  1     five_non…
+ 9 correlation Female  Tenth …              0.620   0.434 0.935  1     five_non…
+10 correlation Eighth… Ninth …              0.421   0.738 0.935  1     five_non…
+11 correlation Eighth… Tenth …              0.598   0.662 0.935  1     five_non…
+12 correlation Ninth … Tenth …              0.483   0.694 0.935  1     five_non…
+# ℹ 1 more variable: analysis_role <chr>
+
+Six-trait covariance/correlation sensitivity
+# A tibble: 2 × 6
+  matrix_type statistic permutations p_value trait_set             analysis_role
+  <chr>           <dbl>        <int>   <dbl> <chr>                 <chr>        
+1 covariance    325.            9999  0.0416 six_traits_including… sensitivity_…
+2 correlation     0.825         9999  0.581  six_traits_including… sensitivity_…
+
+Raw-trait refits
+# A tibble: 11 × 7
+   term                    `Sum Sq` `Mean Sq` NumDF DenDF `F value`  `Pr(>F)`
+   <chr>                      <dbl>     <dbl> <dbl> <dbl>     <dbl>     <dbl>
+ 1 logP_c                        NA        NA     1  301.    30.5   7.29e-  8
+ 2 group                         NA        NA     3  301.    26.2   4.21e- 15
+ 3 leg                           NA        NA     2  302.   636.    6.23e-109
+ 4 log_head_size                 NA        NA     1  301.   109.    4.75e- 22
+ 5 logP_c:group                  NA        NA     3  301.     0.626 5.99e-  1
+ 6 logP_c:leg                    NA        NA     2  302.     1.48  2.29e-  1
+ 7 group:leg                     NA        NA     6  302.    13.0   4.75e- 13
+ 8 group:log_head_size           NA        NA     3  301.     1.16  3.23e-  1
+ 9 leg:log_head_size             NA        NA     2  302.     3.60  2.84e-  2
+10 logP_c:group:leg              NA        NA     6  302.     1.06  3.84e-  1
+11 group:leg:log_head_size       NA        NA     6  302.     3.62  1.73e-  3
+# A tibble: 9 × 10
+  contrast         leg   estimate     SE    df lower.CL upper.CL t.ratio p.value
+  <fct>            <fct>    <dbl>  <dbl> <dbl>    <dbl>    <dbl>   <dbl>   <dbl>
+1 Eighth instar -… Fore…   0.224  0.155   346.   -0.149    0.598   1.45    0.448
+2 Ninth instar - … Fore…  -0.0235 0.0948  346.   -0.252    0.204  -0.248   0.804
+3 Tenth instar - … Fore…  -0.185  0.161   346.   -0.571    0.201  -1.15    0.499
+4 Eighth instar -… Midl…   0.105  0.150   313.   -0.256    0.466   0.702   1    
+5 Ninth instar - … Midl…  -0.0591 0.0916  313.   -0.279    0.161  -0.645   1    
+6 Tenth instar - … Midl…  -0.0546 0.155   313.   -0.428    0.319  -0.352   1    
+7 Eighth instar -… Hind…  -0.185  0.162   325.   -0.576    0.205  -1.14    0.762
+8 Ninth instar - … Hind…  -0.0757 0.0990  325.   -0.314    0.163  -0.764   0.891
+9 Tenth instar - … Hind…  -0.0994 0.168   325.   -0.503    0.304  -0.593   0.891
+# ℹ 1 more variable: Holm_family <chr>
+# A tibble: 1 × 5
+  analysis                                numerator_df residual_df     F p_value
+  <chr>                                          <dbl>       <dbl> <dbl>   <dbl>
+1 Ear by raw foretibia: group-specific s…            3         301  1.33   0.264
+# A tibble: 1 × 5
+  analysis                                numerator_df residual_df     F p_value
+  <chr>                                          <dbl>       <dbl> <dbl>   <dbl>
+1 Eye by raw head size: group-specific s…            3         301  1.97   0.118
+# A tibble: 1 × 5
+  analysis                                numerator_df residual_df     F p_value
+  <chr>                                          <dbl>       <dbl> <dbl>   <dbl>
+1 Ear by raw head size: group-specific s…            3         301  1.34   0.261
+# A tibble: 1 × 5
+  analysis                                numerator_df residual_df     F p_value
+  <chr>                                          <dbl>       <dbl> <dbl>   <dbl>
+1 Group effect on eye length after prono…            3         307  10.6 1.12e-6
+
+Equivalence analyses
+# A tibble: 6 × 16
+  leg     equivalence_margin_perc…¹ estimate_ratio lower_90_ratio upper_90_ratio
+  <chr>                       <dbl>          <dbl>          <dbl>          <dbl>
+1 Foreleg                       2.5           1.00          0.988           1.01
+2 Midleg                        2.5           1.00          0.992           1.02
+3 Hindleg                       2.5           1.01          0.995           1.02
+4 Foreleg                       5             1.00          0.988           1.01
+5 Midleg                        5             1.00          0.992           1.02
+6 Hindleg                       5             1.01          0.995           1.02
+# ℹ abbreviated name: ¹​equivalence_margin_percent
+# ℹ 11 more variables: TOST_p <dbl>, equivalent <lgl>, estimate <dbl>,
+#   SE <dbl>, df <dbl>, lower_bound <dbl>, upper_bound <dbl>, lower_90 <dbl>,
+#   upper_90 <dbl>, p_lower <dbl>, p_upper <dbl>
+# A tibble: 4 × 17
+  trait      reported_scale equivalence_margin_p…¹ estimate_ratio lower_90_ratio
+  <chr>      <chr>                           <dbl>          <dbl>          <dbl>
+1 Tympanal … area ratio                        2.5          1.02           0.994
+2 Tympanal … area ratio                        5            1.02           0.994
+3 Eye length length ratio                      2.5          0.994          0.981
+4 Eye length length ratio                      5            0.994          0.981
+# ℹ abbreviated name: ¹​equivalence_margin_percent
+# ℹ 12 more variables: upper_90_ratio <dbl>, TOST_p <dbl>, equivalent <lgl>,
+#   estimate <dbl>, SE <dbl>, df <dbl>, lower_bound <dbl>, upper_bound <dbl>,
+#   lower_90 <dbl>, upper_90 <dbl>, p_lower <dbl>, p_upper <dbl>
+# A tibble: 4 × 16
+  group      n standardized_beta lower_90 upper_90 robust_beta equivalence_bound
+  <chr>  <int>             <dbl>    <dbl>    <dbl>       <dbl>             <dbl>
+1 Female   118             0.466   0.255     0.676       0.437               0.2
+2 Eight…    78             0.275   0.0432    0.507       0.263               0.2
+3 Ninth…    79             0.167  -0.0329    0.367       0.172               0.2
+4 Tenth…    38             0.218  -0.0768    0.513       0.221               0.2
+# ℹ 9 more variables: TOST_p <dbl>, equivalent <lgl>, estimate <dbl>, SE <dbl>,
+#   df <int>, lower_bound <dbl>, upper_bound <dbl>, p_lower <dbl>,
+#   p_upper <dbl>
+
+Sampling and classification checks
+# A tibble: 2 × 10
+  reference   observed_eighth observed_ninth observed_tenth expected_prop_eighth
+  <chr>                 <int>          <int>          <int>                <dbl>
+1 Kelly 2026…              78             79             38                0.441
+2 Kelly and …              78             79             38                0.433
+# ℹ 5 more variables: expected_prop_ninth <dbl>, expected_prop_tenth <dbl>,
+#   chi_square <dbl>, df <dbl>, p_value <dbl>
+# A tibble: 1 × 10
+  male_n current_eighth_max current_ninth_min current_ninth_max
+   <int>              <dbl>             <dbl>             <dbl>
+1    195               18.5              18.5              24.1
+# ℹ 6 more variables: current_tenth_min <dbl>, n_disagree_legacy_2010 <int>,
+#   percent_disagree_legacy_2010 <dbl>, n_within_0_25_mm <int>,
+#   n_within_0_50_mm <int>, posterior_error_available <lgl>
+
+Multiplicity sensitivity
+# A tibble: 10 × 5
+   analysis                               tier       p_value     p_BH   p_Holm
+   <chr>                                  <chr>        <dbl>    <dbl>    <dbl>
+ 1 Leg allocation group x leg             Primary   2.22e-55 2.22e-54 2.22e-54
+ 2 Leg allometry body size x group        Secondary 1.53e- 2 5.10e- 2 1.22e- 1
+ 3 Leg allometry body size x group x leg  Secondary 9.59e- 2 2.36e- 1 6.71e- 1
+ 4 Raw head size x group x leg            Primary   1.73e- 3 8.66e- 3 1.56e- 2
+ 5 Ear body-size slope x group            Secondary 8.62e- 1 8.62e- 1 1   e+ 0
+ 6 Eye body-size slope x group            Secondary 5.96e- 1 7.45e- 1 1   e+ 0
+ 7 Raw ear-foretibia slope x group        Secondary 2.64e- 1 3.77e- 1 1   e+ 0
+ 8 Raw eye-head slope x group             Secondary 1.18e- 1 2.36e- 1 7.07e- 1
+ 9 Raw weapon-ear slope x group           Secondary 2.61e- 1 3.77e- 1 1   e+ 0
+10 Five-trait correlation-matrix equality Primary   8.48e- 1 8.62e- 1 1   e+ 0
