@@ -4,30 +4,52 @@
 #
 # Usage:
 #   Rscript scripts/run_all.R [data_file] [output_dir] [permutations] [bootstraps]
+#     [rarefactions]
+# Defaults: 9999 permutations, 9999 bootstraps, 2000 rarefactions.
 #
 # Repeatability is not run here because it requires the separate raw
 # remeasurement archive and measurement-order file. Its maintained script is
 # packaged as repeatability_analysis.R and accepts those locations explicitly.
 
+# Resolve defaults from this script, including when sourced from another directory.
+.script_file <- local({
+  source_files <- Filter(Negate(is.null), lapply(sys.frames(), function(x) x$ofile))
+  if (length(source_files)) {
+    tail(source_files, 1L)[[1L]]
+  } else {
+    file_arg <- grep("^--file=", commandArgs(FALSE), value = TRUE)
+    if (length(file_arg) != 1L) stop("Run this file with Rscript or source().")
+    path <- sub("^--file=", "", file_arg[[1L]])
+    # Rscript may encode spaces in --file as "~+~".
+    if (!file.exists(path)) path <- gsub("~+~", " ", path, fixed = TRUE)
+    path
+  }
+})
+.script_file <- normalizePath(.script_file, mustWork = TRUE)
+source(file.path(dirname(.script_file), "workflow_helpers.R"), local = TRUE)
+project_root <- dirname(dirname(.script_file))
+
 args <- commandArgs(trailingOnly = TRUE)
-data_file <- if (length(args) >= 1L) args[[1L]] else "data/trait_data.csv"
+data_file <- if (length(args) >= 1L) args[[1L]] else file.path(project_root, "data", "trait_data.csv")
 output_dir <- if (length(args) >= 2L) {
   args[[2L]]
 } else {
-  "analysis_outputs/weta_trait_analysis"
+  file.path(project_root, "analysis_outputs", "weta_trait_analysis")
 }
-permutations <- if (length(args) >= 3L) args[[3L]] else "9999"
-bootstraps <- if (length(args) >= 4L) args[[4L]] else "9999"
+if (length(args) > 5L) stop("Expected at most five arguments; see usage.")
+permutations <- parse_replicates(
+  if (length(args) >= 3L) args[[3L]] else 9999L, "Permutations", 999L
+)
+bootstraps <- parse_replicates(
+  if (length(args) >= 4L) args[[4L]] else 9999L, "Bootstraps", 999L
+)
+rarefactions <- parse_replicates(
+  if (length(args) >= 5L) args[[5L]] else 2000L, "Rarefactions"
+)
 
 if (!file.exists(data_file)) stop("Trait data not found: ", data_file)
 
-command <- commandArgs(trailingOnly = FALSE)
-file_argument <- command[grepl("^--file=", command)]
-script_dir <- if (length(file_argument) == 1L) {
-  dirname(normalizePath(sub("^--file=", "", file_argument)))
-} else {
-  normalizePath("scripts")
-}
+script_dir <- dirname(.script_file)
 
 rscript <- file.path(R.home("bin"), "Rscript")
 
@@ -46,7 +68,7 @@ run_stage <- function(script, stage_args) {
 dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
 
 run_stage("core_trait_analysis.R", c(data_file, output_dir))
-run_stage("reviewer_reanalysis.R", c(data_file, output_dir))
+run_stage("reviewer_reanalysis.R", c(data_file, output_dir, permutations, rarefactions))
 run_stage(
   "female_reference_multivariate_reanalysis.R",
   c(data_file, output_dir, permutations, bootstraps)
@@ -56,7 +78,7 @@ run_stage(
 # the precision reporting.
 run_stage(
   "instar_matched_precision_analysis.R",
-  c(data_file, output_dir, permutations, bootstraps)
+  c(data_file, output_dir)
 )
 
 manifest <- data.frame(
@@ -67,6 +89,13 @@ manifest <- data.frame(
     "output_directory",
     "residual_randomizations",
     "bootstrap_replicates",
+    "pca_parallel_permutations",
+    "covariance_matrix_permutations",
+    "covariance_rarefactions",
+    "random_skewers_replicates",
+    "core_rng_seed",
+    "reviewer_model_rng_seed",
+    "precision_model_rng_seed",
     "R_version"
   ),
   value = c(
@@ -76,6 +105,13 @@ manifest <- data.frame(
     normalizePath(output_dir),
     permutations,
     bootstraps,
+    permutations,
+    permutations,
+    rarefactions,
+    10000L,
+    20260921L,
+    2301L,
+    2302L,
     R.version.string
   ),
   stringsAsFactors = FALSE

@@ -1,0 +1,46 @@
+---
+title: "A single dominant axis of locomotor and sensory divergence across alternative mating strategies in Wellington tree wētā"
+subtitle: "Title page"
+author: []
+format:
+  docx:
+    reference-doc: word-style-template.docx
+    toc: false
+    number-sections: false
+---
+
+Clint D. Kelly
+
+Département des Sciences biologiques, Université du Québec à Montréal, Montréal, Canada
+
+Corresponding author: Clint D. Kelly; kelly.clint@uqam.ca
+
+ORCID: 0000-0002-0693-7211
+
+# Acknowledgements
+
+I thank Roxanne Chassé Bilodeau for trait photography and the Department of Conservation for collection permits and access to Te Pākeka/Maud Island. ChatGPT and Codex (OpenAI) were used to assist with language editing and R-workflow troubleshooting.
+
+# Funding
+
+This research was funded by the Canada Research Chairs Program.
+
+# Competing interests
+
+The author declares no competing interests.
+
+# Author contributions
+
+CDK collected and analysed the data and wrote the manuscript.
+
+# Data availability
+
+The data supporting this study are available through the Open Science Framework repository at https://osf.io/jrs28/overview?view_only=7a78f30e724b497ab3bb62ffa1c97e10.
+
+# Code availability
+
+The R code used to reproduce all analyses and figures will be available in the same Open Science Framework repository.
+
+# Ethical approval and permissions
+
+Institutional animal-ethics approval was not required for this invertebrate study. The Department of Conservation provided permits for specimen collection and access to Te Pākeka/Maud Island.

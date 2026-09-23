@@ -16,29 +16,46 @@
 # standardized and raw-log analyses are retained as sensitivities. Inference
 # uses Freedman-Lane residual randomization with an add-one p-value correction.
 
+# Resolve defaults from this script, including when sourced from another directory.
+.script_file <- local({
+  source_files <- Filter(Negate(is.null), lapply(sys.frames(), function(x) x$ofile))
+  if (length(source_files)) {
+    tail(source_files, 1L)[[1L]]
+  } else {
+    file_arg <- grep("^--file=", commandArgs(FALSE), value = TRUE)
+    if (length(file_arg) != 1L) stop("Run this file with Rscript or source().")
+    path <- sub("^--file=", "", file_arg[[1L]])
+    # Rscript may encode spaces in --file as "~+~".
+    if (!file.exists(path)) path <- gsub("~+~", " ", path, fixed = TRUE)
+    path
+  }
+})
+.script_file <- normalizePath(.script_file, mustWork = TRUE)
+source(file.path(dirname(.script_file), "workflow_helpers.R"), local = TRUE)
+project_root <- dirname(dirname(.script_file))
+
 args <- commandArgs(trailingOnly = TRUE)
 
 data_file <- if (length(args) >= 1L) {
   args[[1L]]
 } else {
-  "data/trait_data.csv"
+  file.path(project_root, "data", "trait_data.csv")
 }
 
 output_root <- if (length(args) >= 2L) {
   args[[2L]]
 } else {
-  "analysis_outputs/weta_trait_analysis"
+  file.path(project_root, "analysis_outputs", "weta_trait_analysis")
 }
 
-permutations <- if (length(args) >= 3L) as.integer(args[[3L]]) else 9999L
-bootstrap_reps <- if (length(args) >= 4L) as.integer(args[[4L]]) else 9999L
-
-if (is.na(permutations) || permutations < 999L) {
-  stop("Use at least 999 residual randomizations.")
-}
-if (is.na(bootstrap_reps) || bootstrap_reps < 999L) {
-  stop("Use at least 999 stratified bootstrap replicates.")
-}
+if (length(args) > 4L) stop("Expected data, output, permutations and bootstraps.")
+permutations <- parse_replicates(
+  if (length(args) >= 3L) args[[3L]] else 9999L, "Residual randomizations", 999L
+)
+bootstrap_reps <- parse_replicates(
+  if (length(args) >= 4L) args[[4L]] else 9999L, "Stratified bootstraps", 999L
+)
+if (!file.exists(data_file)) stop("Trait data not found: ", data_file)
 
 tables_dir <- file.path(output_root, "tables")
 models_dir <- file.path(output_root, "models")

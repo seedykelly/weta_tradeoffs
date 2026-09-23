@@ -24,6 +24,10 @@ execute:
   message: false
 ---
 
+<!-- SUPERSEDED SOURCE: do not copy this draft over supplement.qmd. -->
+
+**Superseded draft.** The maintained source is `supplement.qmd`. This file is retained for historical reference and is not a submission file.
+
 *Département des Sciences biologiques, Université du Québec à Montréal, Montréal, Canada*
 
 *Correspondence: kelly.clint@uqam.ca; ORCID: 0000-0002-0693-7211*
@@ -36,7 +40,10 @@ library(tidyverse)
 library(knitr)
 library(flextable)
 
-project_dir <- normalizePath(getwd())
+# Read outputs beside this document, independent of the rendering directory.
+project_dir <- dirname(normalizePath(knitr::current_input(dir = TRUE), mustWork = TRUE))
+# Keep later chunks and knitr's relative figure paths beside this document.
+knitr::opts_knit$set(root.dir = project_dir)
 
 # The main manuscript and this supplement use the same analysis outputs.
 output_root <- file.path(project_dir, "analysis_outputs")

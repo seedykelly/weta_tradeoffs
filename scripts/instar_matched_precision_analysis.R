@@ -35,8 +35,7 @@
 # results are reported from a single set of upstream estimates.
 #
 # Usage:
-#   Rscript scripts/instar_matched_precision_analysis.R <data_file> <output_dir> \
-#     [permutations] [bootstraps]
+#   Rscript scripts/instar_matched_precision_analysis.R [data_file] [output_dir]
 #
 # IMPORTANT INTERPRETIVE NOTES
 # - Pronotum length is the measure of structural body size and is centred
@@ -53,16 +52,35 @@
 #   (van Noordwijk & de Jong 1986). It is not by itself evidence of
 #   adaptive coordination.
 
+# Resolve defaults from this script, including when sourced from another directory.
+.script_file <- local({
+  source_files <- Filter(Negate(is.null), lapply(sys.frames(), function(x) x$ofile))
+  if (length(source_files)) {
+    tail(source_files, 1L)[[1L]]
+  } else {
+    file_arg <- grep("^--file=", commandArgs(FALSE), value = TRUE)
+    if (length(file_arg) != 1L) stop("Run this file with Rscript or source().")
+    path <- sub("^--file=", "", file_arg[[1L]])
+    # Rscript may encode spaces in --file as "~+~".
+    if (!file.exists(path)) path <- gsub("~+~", " ", path, fixed = TRUE)
+    path
+  }
+})
+.script_file <- normalizePath(.script_file, mustWork = TRUE)
+source(file.path(dirname(.script_file), "workflow_helpers.R"), local = TRUE)
+project_root <- dirname(dirname(.script_file))
+
 args <- commandArgs(trailingOnly = TRUE)
 
-data_file  <- if (length(args) >= 1L) args[[1L]] else "data/trait_data.csv"
+data_file  <- if (length(args) >= 1L) args[[1L]] else file.path(project_root, "data", "trait_data.csv")
 output_dir <- if (length(args) >= 2L) {
   args[[2L]]
 } else {
-  "analysis_outputs/weta_trait_analysis"
+  file.path(project_root, "analysis_outputs", "weta_trait_analysis")
 }
-permutations <- if (length(args) >= 3L) as.integer(args[[3L]]) else 9999L
-bootstraps   <- if (length(args) >= 4L) as.integer(args[[4L]]) else 2000L
+if (length(args) > 2L) {
+  stop("This stage does not resample; supply only data_file and output_dir.")
+}
 
 if (!file.exists(data_file)) {
   stop("Trait data not found: ", data_file)
@@ -84,6 +102,8 @@ if (!file.exists(upstream_correlations)) {
 
 reference_pronotum <- 7.2
 alpha <- 0.05
+# emmeans may use simulated perturbations for approximate GLS degrees of freedom.
+set.seed(2302)
 
 
 # 1. PACKAGES ----------------------------------------------------------------
@@ -703,4 +723,3 @@ iwalk(outputs, ~ readr::write_csv(.x, file.path(tables_dir, paste0(.y, ".csv")))
 
 cat("\nInstar-matched decomposition and precision analyses completed.\n")
 cat("Tables written to:\n ", normalizePath(tables_dir), "\n")
-

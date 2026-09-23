@@ -26,9 +26,12 @@ execute:
   echo: false
   warning: false
   message: false
-params:
-  computer: "work"  # use "work" or "home"
+
 ---
+
+<!-- SUPERSEDED SOURCE: do not copy this draft over manuscript.qmd. -->
+
+**Superseded draft.** The maintained source is `manuscript.qmd`. This file is retained for historical reference and is not a submission file.
 
 <!--
 The model outputs used by this manuscript are in analysis_outputs.
@@ -44,39 +47,12 @@ library(tidyverse)
 library(knitr)
 library(flextable)
 
-alpha    <- 0.05
-computer <- params$computer
+alpha <- 0.05
 
-# Auto-detect project directory based on which path exists
-work_dir <- paste0(
-  "/Users/uqam/Documents/Research_Admin/research projects/",
-  "Trait compensation"
-)
-
-home_dir <- paste0(
-  "/Users/kellyclintdale/Library/Mobile Documents/",
-  "com~apple~CloudDocs/Documents/Research_Admin/research projects/",
-  "Trait compensation"
-)
-
-# Use whichever directory actually exists, with preference order
-if (dir.exists(work_dir)) {
-  project_dir <- work_dir
-} else if (dir.exists(home_dir)) {
-  project_dir <- home_dir
-} else {
-  # If neither exists, use the one specified by computer parameter
-  project_dir <- switch(
-    computer,
-    work = work_dir,
-    home = home_dir,
-    stop(
-      "Project directory not found and params.computer not recognized. ",
-      "Set params.computer to 'work' or 'home'.",
-      call. = FALSE
-    )
-  )
-}
+# Read outputs beside this document, independent of the rendering directory.
+project_dir <- dirname(normalizePath(knitr::current_input(dir = TRUE), mustWork = TRUE))
+# Keep later chunks and knitr's relative figure paths beside this document.
+knitr::opts_knit$set(root.dir = project_dir)
 
 output_dir  <- file.path(project_dir, "analysis_outputs", "weta_trait_analysis")
 tables_dir  <- file.path(output_dir, "tables")

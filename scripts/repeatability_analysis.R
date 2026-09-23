@@ -29,18 +29,36 @@ library(rptR)
 # 1. Paths
 # ============================================================
 
+# Resolve defaults from this script, including when sourced from another directory.
+.script_file <- local({
+  source_files <- Filter(Negate(is.null), lapply(sys.frames(), function(x) x$ofile))
+  if (length(source_files)) {
+    tail(source_files, 1L)[[1L]]
+  } else {
+    file_arg <- grep("^--file=", commandArgs(FALSE), value = TRUE)
+    if (length(file_arg) != 1L) stop("Run this file with Rscript or source().")
+    path <- sub("^--file=", "", file_arg[[1L]])
+    # Rscript may encode spaces in --file as "~+~".
+    if (!file.exists(path)) path <- gsub("~+~", " ", path, fixed = TRUE)
+    path
+  }
+})
+.script_file <- normalizePath(.script_file, mustWork = TRUE)
+source(file.path(dirname(.script_file), "workflow_helpers.R"), local = TRUE)
+project_root <- dirname(dirname(.script_file))
+
 args <- commandArgs(trailingOnly = TRUE)
 
 # Command-line usage:
 # Rscript repeatability_analysis.R [source_project_dir] [raw_measurement_dir]
 #   [clean_measurement_dir] [output_dir]
 # The repeat-measurement images and measurement-order file are not part of the
-# manuscript archive, so their parent project must be supplied when the default
-# path is unavailable.
+# manuscript archive, so their parent project must be supplied if the raw data
+# are stored outside this project.
 project_dir <- if (length(args) >= 1L) {
   args[[1L]]
 } else {
-  "/Users/uqam/Documents/Research_Admin/research projects/Trait compensation"
+  project_root
 }
 
 raw_dir <- if (length(args) >= 2L) {
@@ -58,7 +76,7 @@ clean_dir <- if (length(args) >= 3L) {
 output_dir_argument <- if (length(args) >= 4L) {
   args[[4L]]
 } else {
-  "analysis_outputs/repeatability"
+  file.path(project_dir, "analysis_outputs", "repeatability")
 }
 
 na_vals <- c("", "NA", "NaN", "-", "N/A")

@@ -1,6 +1,32 @@
 library(tidyverse)
 
-source_dir <- "/Users/uqam/Documents/Research_Admin/research projects/Trait compensation/data/clean/measurements"
+# Resolve defaults from this script, including when sourced from another directory.
+.script_file <- local({
+  source_files <- Filter(Negate(is.null), lapply(sys.frames(), function(x) x$ofile))
+  if (length(source_files)) {
+    tail(source_files, 1L)[[1L]]
+  } else {
+    file_arg <- grep("^--file=", commandArgs(FALSE), value = TRUE)
+    if (length(file_arg) != 1L) stop("Run this file with Rscript or source().")
+    path <- sub("^--file=", "", file_arg[[1L]])
+    # Rscript may encode spaces in --file as "~+~".
+    if (!file.exists(path)) path <- gsub("~+~", " ", path, fixed = TRUE)
+    path
+  }
+})
+.script_file <- normalizePath(.script_file, mustWork = TRUE)
+source(file.path(dirname(.script_file), "workflow_helpers.R"), local = TRUE)
+project_root <- dirname(dirname(.script_file))
+
+# Usage: Rscript scripts/join_cleaned_files.R [clean_measurement_dir] [output_file]
+args <- commandArgs(trailingOnly = TRUE)
+if (length(args) > 2L) stop("Expected at most source_dir and output_file.")
+source_dir <- if (length(args) >= 1L) args[[1L]] else {
+  file.path(project_root, "data", "clean", "measurements")
+}
+output_file <- if (length(args) >= 2L) args[[2L]] else {
+  file.path(dirname(source_dir), "trait_data.csv")
+}
 
 # Import cleaned measurement files
 forelegs <- read_csv(
@@ -33,6 +59,20 @@ id_sex <- read_csv(
   show_col_types = FALSE
 )
 
+
+# Validate every input BEFORE joining: duplicate keys multiply observations.
+inputs <- list(pronotum = pronotum, head = head, forelegs = forelegs,
+               midlegs = midlegs, hindlegs = hindlegs, id_sex = id_sex)
+iwalk(inputs, validate_unique_ids)
+if (!"sex" %in% names(id_sex) || anyNA(id_sex$sex) ||
+    any(!id_sex$sex %in% c("f", "m"))) {
+  stop("id_sex must contain sex coded as 'f' or 'm' for every ID.")
+}
+measurement_ids <- unique(unlist(lapply(inputs[names(inputs) != "id_sex"], `[[`, "ID")))
+missing_sex <- setdiff(measurement_ids, id_sex$ID)
+if (length(missing_sex)) {
+  stop("Missing sex metadata for IDs: ", paste(missing_sex, collapse = ", "))
+}
 
 trait_data <- list(
   pronotum,
@@ -111,6 +151,7 @@ trait_data <- trait_data |>
   mutate(
     morph = case_when(
       sex == "f"                        ~ "female",
+      is.na(head_length)                 ~ NA_character_,
       sex == "m" & head_length < 18.50579 ~ "eighth",
       sex == "m" & head_length > 24.15225 ~ "tenth",
       sex == "m"                        ~ "ninth"
@@ -123,10 +164,5 @@ trait_data <- trait_data |>
 # Save final combined dataset
 # ------------------------------------------------------------
 
-write_csv(
-  trait_data,
-  file.path(dirname(source_dir), "trait_data.csv"),
-  na = ""
-)
-
-
+dir.create(dirname(output_file), recursive = TRUE, showWarnings = FALSE)
+write_csv(trait_data, output_file, na = "")

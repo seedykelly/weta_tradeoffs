@@ -10,16 +10,35 @@ library(tidyverse)
 # 1. File locations
 # ------------------------------------------------------------
 
-raw_dir <- paste0(
-  "/Users/uqam/Documents/Research_Admin/research projects/",
-  "Trait compensation/data/raw/measurements"
-)
+# Resolve defaults from this script, including when sourced from another directory.
+.script_file <- local({
+  source_files <- Filter(Negate(is.null), lapply(sys.frames(), function(x) x$ofile))
+  if (length(source_files)) {
+    tail(source_files, 1L)[[1L]]
+  } else {
+    file_arg <- grep("^--file=", commandArgs(FALSE), value = TRUE)
+    if (length(file_arg) != 1L) stop("Run this file with Rscript or source().")
+    path <- sub("^--file=", "", file_arg[[1L]])
+    # Rscript may encode spaces in --file as "~+~".
+    if (!file.exists(path)) path <- gsub("~+~", " ", path, fixed = TRUE)
+    path
+  }
+})
+.script_file <- normalizePath(.script_file, mustWork = TRUE)
+source(file.path(dirname(.script_file), "workflow_helpers.R"), local = TRUE)
+project_root <- dirname(dirname(.script_file))
 
-clean_dir <- file.path(
-  dirname(dirname(raw_dir)),
-  "clean",
-  "measurements"
-)
+# Usage: Rscript scripts/data_cleaning_hindleg.R [raw_dir] [clean_dir]
+args <- commandArgs(trailingOnly = TRUE)
+if (length(args) > 2L) stop("Expected at most raw_dir and clean_dir.")
+raw_dir <- if (length(args) >= 1L) args[[1L]] else {
+  file.path(project_root, "data", "raw", "measurements")
+}
+if (!dir.exists(raw_dir)) stop("Raw measurement directory not found: ", raw_dir)
+
+clean_dir <- if (length(args) >= 2L) args[[2L]] else {
+  file.path(dirname(dirname(raw_dir)), "clean", "measurements")
+}
 
 dir.create(
   clean_dir,

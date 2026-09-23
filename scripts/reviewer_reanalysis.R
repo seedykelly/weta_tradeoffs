@@ -19,13 +19,43 @@ suppressPackageStartupMessages({
   library(lmerTest)
 })
 
+# Resolve defaults from this script, including when sourced from another directory.
+.script_file <- local({
+  source_files <- Filter(Negate(is.null), lapply(sys.frames(), function(x) x$ofile))
+  if (length(source_files)) {
+    tail(source_files, 1L)[[1L]]
+  } else {
+    file_arg <- grep("^--file=", commandArgs(FALSE), value = TRUE)
+    if (length(file_arg) != 1L) stop("Run this file with Rscript or source().")
+    path <- sub("^--file=", "", file_arg[[1L]])
+    # Rscript may encode spaces in --file as "~+~".
+    if (!file.exists(path)) path <- gsub("~+~", " ", path, fixed = TRUE)
+    path
+  }
+})
+.script_file <- normalizePath(.script_file, mustWork = TRUE)
+source(file.path(dirname(.script_file), "workflow_helpers.R"), local = TRUE)
+project_root <- dirname(dirname(.script_file))
+
 args <- commandArgs(trailingOnly = TRUE)
-data_file <- if (length(args) >= 1) args[[1]] else "data/trait_data.csv"
+data_file <- if (length(args) >= 1) args[[1]] else file.path(project_root, "data", "trait_data.csv")
 output_root <- if (length(args) >= 2) {
   args[[2]]
 } else {
-  "analysis_outputs/weta_trait_analysis"
+  file.path(project_root, "analysis_outputs", "weta_trait_analysis")
 }
+
+# Usage: Rscript scripts/reviewer_reanalysis.R [data_file] [output_dir]
+#   [permutations] [rarefactions]
+if (length(args) > 4L) stop("Expected at most four arguments; see usage.")
+parallel_reps <- parse_replicates(
+  if (length(args) >= 3L) args[[3L]] else 9999L, "Permutations", 999L
+)
+matrix_permutations <- parallel_reps
+rarefaction_reps <- parse_replicates(
+  if (length(args) >= 4L) args[[4L]] else 2000L, "Rarefactions"
+)
+if (!file.exists(data_file)) stop("Trait data not found: ", data_file)
 
 tables_dir <- file.path(output_root, "tables")
 figures_dir <- file.path(output_root, "figures")
@@ -38,9 +68,7 @@ set.seed(20260921)
 options(contrasts = c("contr.treatment", "contr.poly"))
 
 reference_pronotum <- 7.2
-parallel_reps <- 9999L
-matrix_permutations <- 9999L
-rarefaction_reps <- 2000L
+random_skewers_reps <- 10000L
 
 group_levels <- c("Female", "Eighth instar", "Ninth instar", "Tenth instar")
 male_levels <- c("Eighth instar", "Ninth instar", "Tenth instar")
@@ -167,6 +195,7 @@ parallel_pca <- function(data_matrix, groups, reps = parallel_reps) {
   variance <- tibble(
     component = paste0("PC", seq_along(observed)),
     observed_eigenvalue = observed,
+    permutations = reps,
     parallel_95_eigenvalue = null_95,
     variance_percent = 100 * observed / sum(observed),
     cumulative_percent = cumsum(100 * observed / sum(observed)),
@@ -299,6 +328,7 @@ pairwise_matrix_permutation <- function(mat, labels, matrix_type, reps = matrix_
         group_1 = pair[[1]],
         group_2 = pair[[2]],
         frobenius_distance = sqrt(observed),
+        permutations = reps,
         p_value = (1 + sum(null >= observed)) / (reps + 1)
       )
     }
@@ -311,7 +341,7 @@ pairwise_matrix_permutation <- function(mat, labels, matrix_type, reps = matrix_
     ungroup()
 }
 
-random_skewers_similarity <- function(a, b, reps = 10000L) {
+random_skewers_similarity <- function(a, b, reps = random_skewers_reps) {
   betas <- matrix(rnorm(nrow(a) * reps), nrow = nrow(a), ncol = reps)
   betas <- sweep(betas, 2, sqrt(colSums(betas^2)), "/")
   response_a <- a %*% betas
@@ -395,6 +425,7 @@ rarefied_matrix_distances <- function(
     summarise(
       matrix_type = matrix_type,
       target_n = target_n,
+      replicates = reps,
       median_distance = median(distance),
       lower_95 = quantile(distance, 0.025),
       upper_95 = quantile(distance, 0.975),
@@ -711,6 +742,9 @@ covariance_six_trait_omnibus <- bind_rows(
 # -----------------------------------------------------------------------------
 # One-stage raw-trait refits
 # -----------------------------------------------------------------------------
+
+# Keep approximate model degrees of freedom independent of resampling counts.
+set.seed(2301)
 
 legs_long <- dat |>
   select(ID, group, logP_c, log_head_size, log_foreleg, log_midleg, log_hindleg) |>
@@ -1284,6 +1318,12 @@ ggsave(
 # -----------------------------------------------------------------------------
 
 outputs <- list(
+  reviewer_resampling_settings = tibble(
+    procedure = c("pca_parallel_analysis", "covariance_matrix_permutation",
+                  "covariance_rarefaction", "random_skewers"),
+    replicates = c(parallel_reps, matrix_permutations,
+                   rarefaction_reps, random_skewers_reps)
+  ),
   morph_frequency_tests = morph_frequency_tests,
   morph_classification_summary = classification_summary,
   morph_classification_records = male_classification,
