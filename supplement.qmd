@@ -724,7 +724,7 @@ sensory_means_main_display <- bind_rows(
 
 This supplement provides measurement-reliability results and detailed weapon–trait and sensory estimates (Tables S1–S6), multivariate and robustness analyses (Tables S7–S13), and additional estimates from the leg and sensory models (Tables S14–S17). Tables S18–S19 summarize within-group correlations and the precision of planned leg contrasts. Figures S1–S4 show within-group correlations, individual-level ordination, body-size distributions and leg allometries.
 
-The distinction between the five-trait reference analysis and head-inclusive sensitivities identifies the trait sets, not their confirmatory status. Dimensionality, matrix comparisons, equivalence-region checks and the cross-analysis multiplicity audit are exploratory. Both documents use the same analysis outputs and retain the morph assignments based on the 2016 head-length cut-offs throughout. Reproduction instructions and additional model outputs are supplied with the analysis code.
+The distinction between the five-trait reference analysis and head-inclusive sensitivities identifies the trait sets, not their confirmatory status. Dimensionality, matrix comparisons, equivalence-region checks and the cross-analysis multiplicity audit are exploratory. All analyses in the main manuscript and this supplement retain the morph assignments based on the 2016 head-length cut-offs. Reproduction instructions and additional model outputs are supplied with the analysis code.
 
 # Supplementary methods
 
@@ -734,7 +734,7 @@ Male morph assignments used the head-length cut-offs for the 2016 sample [@kelly
 
 ## Measurement reliability
 
-Forty-eight specimens from the 2016 collection were measured on three occasions. The measurement-order file records 12 individuals per sex or morph group and one from each of 12 size strata within each group. Repeatability was estimated for pooled, morph-adjusted and morph-plus-round models. Relative technical error of measurement, absolute-agreement ICC(A,1), round-pair bias and measurement-order trends were also calculated. The order analyses were treated as diagnostics; their minimum Benjamini–Hochberg-adjusted p-values were `r p_text(min_signed_order_q)` for signed drift and `r p_text(min_absolute_order_q)` for absolute-error drift.
+Forty-eight specimens from the 2016 collection were measured on three occasions. The repeatability sample comprised 12 individuals per sex or morph group, with one individual from each of 12 size strata within each group. Repeatability was estimated for pooled, morph-adjusted and morph-plus-round models. Relative technical error of measurement, absolute-agreement ICC(A,1), round-pair bias and measurement-order trends were also calculated. The order analyses were treated as diagnostics; their minimum Benjamini–Hochberg-adjusted p-values were `r p_text(min_signed_order_q)` for signed drift and `r p_text(min_absolute_order_q)` for absolute-error drift.
 
 ## Multivariate sensitivity analyses
 
@@ -1036,7 +1036,7 @@ equivalence_sensitivity_display |>
 
 ## Detailed estimates from the main-text models
 
-The following tables use the same `analysis_outputs/weta_trait_analysis` results as the accompanying main manuscript. They report exact estimates underlying its figures and selected contrasts. They are separate from the exploratory and sensitivity analyses in Tables S1–S13.
+The following tables report detailed estimates from the models presented in the main manuscript, including estimates underlying its figures and selected contrasts. They are presented separately from the exploratory and sensitivity analyses in Tables S1–S13.
 
 **Table S14**. Male–female contrasts in predicted leg length at a pronotum length of 7.2 mm from the main-text repeated-trait model. Percent differences are relative to females; positive values indicate longer legs in males. Confidence limits are for the male-to-female ratio. P-values are Holm-adjusted and simultaneous 95% confidence limits are Bonferroni-adjusted across the three male–female contrasts within each leg pair.
 
@@ -1085,8 +1085,7 @@ sensory_means_main_display |>
 
 {{< pagebreak >}}
 
-**Table S18**. Within-group correlations among the five size-adjusted traits,
-consolidated from the upstream correlation table. This descriptive sign
+**Table S18**. Summary of within-group correlations among the five size-adjusted traits. This descriptive sign
 audit identifies observed negative phenotypic associations; it cannot establish
 the presence or absence of an underlying resource-allocation cost.
 

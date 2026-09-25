@@ -19,7 +19,7 @@ ORCID: 0000-0002-0693-7211
 
 # Acknowledgements
 
-I thank Roxanne Chassé Bilodeau for trait photography and the Department of Conservation for collection permits and access to Te Pākeka/Maud Island. ChatGPT and Codex (OpenAI) were used to assist with language editing, R-code development, statistical sensitivity analyses and reporting checks. The author takes responsibility for the analyses and final content.
+I thank Roxanne Chassé Bilodeau for trait photography and the Department of Conservation for collection permits and access to Te Pākeka/Maud Island.
 
 # Funding
 
