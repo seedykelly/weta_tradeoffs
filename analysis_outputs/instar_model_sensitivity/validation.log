@@ -1,0 +1,3 @@
+PASS: original OLS and archived results; independent group estimates and uncertainty; independent Welch inference; sample IDs/morphs; residual SD mapping; ML comparisons.
+PASS: all 193 pre-existing tracked-by-hash files remain unchanged.
+PASS: all six numerical tables reproduce the reviewed staging run exactly.

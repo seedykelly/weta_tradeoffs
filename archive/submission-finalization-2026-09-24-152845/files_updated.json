@@ -1,0 +1,20 @@
+{
+  "project": "/Users/kellyclintdale/Library/Mobile Documents/com~apple~CloudDocs/Documents/Research_Admin/research projects/Trait compensation",
+  "staging": "/private/tmp/weta-final-analysis",
+  "files": [
+    "manuscript.qmd",
+    "supplement.qmd",
+    "submission-review/manuscript.docx",
+    "submission-review/supplement.docx",
+    "final_submission_manifest.csv",
+    "analysis_outputs/weta_trait_analysis/final_submission_verification.md"
+  ],
+  "original_hashes": {
+    "manuscript.qmd": "7b18ff8dc2d907470aaf3d837140ca63",
+    "supplement.qmd": "8c9fe7291185bee7a53d2075accd4119",
+    "submission-review/manuscript.docx": "f579ee4885b609f502f4a2df7af2bd97",
+    "submission-review/supplement.docx": "809abba2af989f3a06ca089974e0ac6b",
+    "final_submission_manifest.csv": "8d3f89dd10a2920d247a8950f882e37f",
+    "analysis_outputs/weta_trait_analysis/final_submission_verification.md": "12e49566d44e3aad6d34e4e904a3c832"
+  }
+}

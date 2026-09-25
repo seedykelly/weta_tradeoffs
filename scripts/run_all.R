@@ -73,9 +73,11 @@ run_stage(
   "female_reference_multivariate_reanalysis.R",
   c(data_file, output_dir, permutations, bootstraps)
 )
+run_stage("group_divergence_checks.R", c(data_file, output_dir, permutations))
+
 # Runs last because it consolidates the covariance sign audit from the
-# upstream correlation table and adds the instar-matched decomposition and
-# the precision reporting.
+# upstream correlation table and adds the final flexible instar comparisons, original-model sensitivity and
+# precision reporting.
 run_stage(
   "instar_matched_precision_analysis.R",
   c(data_file, output_dir)

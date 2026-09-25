@@ -1,56 +1,28 @@
 #!/usr/bin/env Rscript
 
-# Instar-matched decomposition and precision reporting.
+# Final secondary instar contrasts, model sensitivity and precision reporting.
+# Runs after the main analyses; does not change their models or estimates.
 #
-# This is a fourth stage of the manuscript pipeline. It runs after
-# core_trait_analysis.R, reviewer_reanalysis.R and
-# female_reference_multivariate_reanalysis.R, and it adds only the two
-# analyses that are not already produced upstream:
+# Final model: separate log-trait intercept, log-pronotum slope and residual
+# variance for each group, equivalent to gls(y ~ group * logP_c,
+# weights = varIdent(~1|group), method = "REML"). Independent group regressions
+# give the same estimates and covariance without numerical optimization.
 #
-#   1. INSTAR-MATCHED DECOMPOSITION
-#      The male morphs differ in weapon size, but they also differ in the
-#      number of juvenile instars completed before maturity. Within males,
-#      instar number and weapon expression change together, so the
-#      among-morph gradient cannot separate them. Females mature at the
-#      tenth instar, as tenth-instar males do, but do not express the
-#      exaggerated male head and mandibles. Tenth-instar males and females
-#      are therefore matched on instar number while differing in weapon
-#      expression, which makes the within-tenth-instar contrast the only
-#      comparison in the study that holds developmental duration constant.
-#      Fitting instar number and sex as separate terms decomposes each
-#      trait's divergence into a per-instar component and an
-#      instar-matched weapon component, and compares the two directly.
+# At pronotum 7.2 mm, compare (tenth - eighth)/2 with tenth - female on the
+# log scale, and test their difference directly. The first quantity is an
+# average across two male instar steps, not a fitted developmental effect.
+# The ninth-instar mean is free. No contrast isolates a weapon effect.
+# Use this structure for all five traits; do not choose models by p-value.
 #
-#   2. PRECISION AND MINIMUM DETECTABLE EFFECTS
-#      A null interaction is only interpretable alongside the smallest
-#      effect the design could have detected. For every planned contrast
-#      the standard error, the 95% confidence interval and the minimum
-#      detectable effect at 80% power are reported.
+# The original common-size-slope/equal-instar-step model is retained only
+# as a sensitivity (legacy CSV names are preserved for reproducibility).
+# A second constrained repeated-leg decomposition is no longer needed:
+# main leg allocation retains its established repeated-trait GLS model,
+# while these secondary tests concern one trait at a time with Holm control.
 #
-# The dimensionality, PCA, parallel-analysis and covariance-matrix results
-# are NOT recomputed here. Those are produced upstream by
-# reviewer_reanalysis.R and female_reference_multivariate_reanalysis.R and
-# are read from their tables. This stage only consolidates the covariance
-# sign audit from the upstream correlation table, so that the structural
-# results are reported from a single set of upstream estimates.
-#
-# Usage:
-#   Rscript scripts/instar_matched_precision_analysis.R [data_file] [output_dir]
-#
-# IMPORTANT INTERPRETIVE NOTES
-# - Pronotum length is the measure of structural body size and is centred
-#   on 7.2 mm (logP_c = 0), which lies within the common observed support
-#   of all four groups.
-# - All continuous morphological variables are analysed on a log scale, so
-#   slopes are allometric exponents and differences are ratios.
-# - The decomposition partitions divergence into instar number and weapon
-#   expression. It does not identify the hormonal or developmental
-#   mechanism through which either acts, and it is not a test of selection
-#   on weaponry, because the instar-matched contrast also differs in sex.
-# - A dominant rank-one structure with no negative covariances is the
-#   expected outcome when traits share a common growth axis
-#   (van Noordwijk & de Jong 1986). It is not by itself evidence of
-#   adaptive coordination.
+# Usage: Rscript scripts/instar_matched_precision_analysis.R [data_file] [output_dir]
+# Final table: tables/instar_matched_contrasts.csv
+# Original-model sensitivity: tables/instar_contrast_sensitivity.csv
 
 # Resolve defaults from this script, including when sourced from another directory.
 .script_file <- local({
@@ -197,6 +169,17 @@ if (length(missing_columns) > 0) {
     ),
     call. = FALSE
   )
+}
+
+validate_unique_ids(dat_raw, "Trait data")
+stopifnot(!anyNA(dat_raw$morph), !anyNA(dat_raw$sex),
+  all(dat_raw$morph %in% c("female", "eighth", "ninth", "tenth")),
+  all(dat_raw$sex %in% c("f", "m")),
+  all((dat_raw$sex == "f") == (dat_raw$morph == "female")))
+for (column in setdiff(required_columns, c("ID", "sex", "morph"))) {
+  values <- dat_raw[[column]]
+  if (!is.numeric(values) || any(!is.na(values) & (!is.finite(values) | values <= 0)))
+    stop("Invalid measurements in ", column)
 }
 
 dat <- dat_raw |>
@@ -346,252 +329,156 @@ trait_decomposition <- map_dfr(trait_cols, decompose_trait) |>
                                "weapon", "per_instar")
   )
 
-# Joint decomposition across the three leg pairs, with the unstructured
-# within-individual covariance and separate residual variances per leg pair.
-# This is the multivariate analogue of the per-trait decomposition and
-# respects the non-independence of three legs measured on one individual.
-
-leg_long <- dat |>
-  select(ID, group, sex, instar, logP_c, l_foreleg, l_midleg, l_hindleg) |>
-  pivot_longer(
-    cols = c(l_foreleg, l_midleg, l_hindleg),
-    names_to = "leg",
-    values_to = "log_leg"
-  ) |>
-  mutate(
-    leg = factor(
-      leg,
-      levels = c("l_foreleg", "l_midleg", "l_hindleg"),
-      labels = c("Foreleg", "Midleg", "Hindleg")
-    ),
-    instar_c = instar - 10
-  ) |>
-  filter(!is.na(log_leg))
-
-leg_joint <- gls(
-  log_leg ~ (logP_c + instar_c + sex) * leg,
-  data = leg_long,
-  correlation = corSymm(form = ~ as.integer(leg) | ID),
-  weights = varIdent(form = ~ 1 | leg),
-  method = "REML",
-  control = glsControl(opt = "optim", maxIter = 200, msMaxIter = 200)
+# Final model: separate group regressions and analytic contrast uncertainty.
+# Different groups contain independent specimens. Correlation between two
+# contrasts is retained by forming their difference from the group means.
+final_models <- list()
+final_parameters <- list()
+final_samples <- list()
+final_contrasts <- list()
+weights <- rbind(
+  male_step = c(0, -0.5, 0, 0.5),
+  matched_sex = c(-1, 0, 0, 1),
+  contrast_difference = c(1, -0.5, 0, -0.5)
 )
+colnames(weights) <- levels(dat$group)
 
-joint_df <- gls_df(leg_joint)
-
-joint_components <- emmeans::emtrends(leg_joint, ~ leg, var = "instar_c", infer = c(TRUE, TRUE)) |>
-  as_tibble() |>
-  transmute(
-    leg,
-    instar_component_log_per_instar = instar_c.trend,
-    instar_component_SE = SE,
-    instar_component_pct_per_instar = 100 * (exp(instar_c.trend) - 1),
-    instar_component_p = p.value
+for (trait_label in trait_cols) {
+  trait <- sub("^l_", "", trait_label)
+  included <- complete.cases(dat[, c(trait_label, "logP_c")])
+  dt <- dat[included, ]
+  dt$y <- dt[[trait_label]]
+  fits <- lapply(split(dt, dt$group), function(z) {
+    if (nrow(z) < 4L || min(z$logP_c) > 0 || max(z$logP_c) < 0)
+      stop("Insufficient data or reference body size outside a group range.")
+    fit <- lm(y ~ logP_c, data = z)
+    if (fit$rank != 2L || any(!is.finite(vcov(fit)))) stop("Unidentified group regression.")
+    fit
+  })
+  fits <- fits[colnames(weights)]
+  final_models[[trait]] <- fits
+  means <- vapply(fits, function(f) unname(coef(f)[1]), numeric(1))
+  variances <- vapply(fits, function(f) vcov(f)[1, 1], numeric(1))
+  dfs <- vapply(fits, df.residual, numeric(1))
+  final_parameters[[trait]] <- data.frame(
+    trait, group = names(fits), n = vapply(fits, nobs, numeric(1)),
+    adjusted_log_mean = means, adjusted_geometric_mean = exp(means),
+    adjusted_mean_variance = variances,
+    body_size_slope = vapply(fits, function(f) unname(coef(f)[2]), numeric(1)),
+    residual_sd = vapply(fits, sigma, numeric(1)), residual_df = dfs
   )
+  final_samples[[trait]] <- data.frame(ID = dat$ID, trait, group = dat$group, included)
+  rows <- lapply(seq_len(nrow(weights)), function(i) {
+    w <- weights[i, ]; estimate <- sum(w * means)
+    parts <- w^2 * variances; se <- sqrt(sum(parts))
+    df <- sum(parts)^2 / sum(parts^2 / dfs)
+    ci <- estimate + c(-1, 1) * qt(.975, df) * se
+    data.frame(trait, n = nrow(dt), contrast = rownames(weights)[i],
+      estimate_log = estimate, SE = se, df,
+      CI_lower = ci[1], CI_upper = ci[2], percent = 100 * expm1(estimate),
+      p = 2 * pt(abs(estimate / se), df, lower.tail = FALSE))
+  })
+  final_contrasts[[trait]] <- bind_rows(rows)
+}
+final_long <- bind_rows(final_contrasts) |>
+  group_by(contrast) |>
+  mutate(holm_p = p.adjust(p, "holm")) |>
+  ungroup()
+final_wide <- final_long |>
+  pivot_wider(names_from = contrast,
+    values_from = c(estimate_log, SE, df, CI_lower, CI_upper, percent, p, holm_p),
+    names_glue = "{contrast}_{.value}")
 
-joint_weapon <- emmeans::emmeans(leg_joint, ~ sex | leg) |>
-  pairs() |>
-  as_tibble() |>
-  transmute(
-    leg,
-    # pairs() returns female - male, so the contrast is negated to give
-    # male relative to female, matching the per-trait decomposition and the
-    # sign convention used elsewhere in the manuscript.
-    weapon_component_log = -estimate,
-    weapon_component_SE = SE,
-    weapon_component_p = p.value,
-    weapon_component_pct_male_vs_female = 100 * (exp(-estimate) - 1)
-  )
+original_sensitivity <- trait_decomposition |>
+  transmute(trait, n, model = "Original constrained",
+    male_step_percent = instar_component_pct_per_instar,
+    matched_sex_percent = weapon_component_pct_male_vs_female,
+    contrast_difference_estimate_log = component_difference_log,
+    contrast_difference_CI_lower = component_difference_log - qt(.975, df_residual) * component_difference_SE,
+    contrast_difference_CI_upper = component_difference_log + qt(.975, df_residual) * component_difference_SE,
+    contrast_difference_holm_p = component_difference_holm_p)
+final_sensitivity <- final_wide |>
+  transmute(trait, n, model = "Final flexible", male_step_percent, matched_sex_percent,
+    contrast_difference_estimate_log, contrast_difference_CI_lower,
+    contrast_difference_CI_upper, contrast_difference_holm_p)
+contrast_sensitivity <- bind_rows(original_sensitivity, final_sensitivity) |>
+  mutate(trait = factor(trait, levels = sub("^l_", "", trait_cols))) |>
+  arrange(trait, desc(model))
 
-joint_table <- left_join(joint_components, joint_weapon, by = "leg") |>
-  mutate(
-    df_residual = joint_df,
-    instar_min_detectable_pct = mde_percent(instar_component_SE, joint_df),
-    weapon_min_detectable_pct = mde_percent(weapon_component_SE, joint_df),
-    larger_component = if_else(
-      abs(instar_component_log_per_instar) > abs(weapon_component_log),
-      "per_instar", "weapon"
-    )
-  )
-
-cat("\nINSTAR-MATCHED DECOMPOSITION BY TRAIT\n")
-print(trait_decomposition |>
-        select(trait, n,
-               instar_component_pct_per_instar, instar_component_holm_p,
-               weapon_component_pct_male_vs_female, weapon_component_holm_p,
-               component_difference_holm_p, larger_component),
-      n = 10)
-
-cat("\nJOINT DECOMPOSITION ACROSS LEG PAIRS\n")
-print(joint_table)
-
+models_dir <- file.path(output_dir, "models")
+dir.create(models_dir, recursive = TRUE, showWarnings = FALSE)
+saveRDS(final_models, file.path(models_dir, "instar_matched_group_models.rds"))
+writeLines(capture.output(sessionInfo()), file.path(output_dir, "final_instar_session_info.txt"))
+write.csv(data.frame(
+  item = c("run_completed_utc", "input_md5", "script_md5", "model", "reference_pronotum_mm", "degrees_of_freedom", "multiplicity"),
+  value = c(format(Sys.time(), tz = "UTC", usetz = TRUE), unname(tools::md5sum(data_file)),
+    unname(tools::md5sum(.script_file)), "Group-specific intercepts, size slopes and residual variances",
+    "7.2", "Analytic Welch-Satterthwaite", "Five traits separately for each of three contrasts")),
+  file.path(output_dir, "final_instar_manifest.csv"), row.names = FALSE)
+cat("\nFINAL INSTAR-MATCHED CONTRASTS\n")
+print(final_wide |> select(trait, n, male_step_percent, matched_sex_percent, contrast_difference_holm_p))
 
 # ============================================================
 # 5. PRECISION AND MINIMUM DETECTABLE EFFECTS
 # ============================================================
 
-# Refit the repeated-trait model used for the main-text leg inference, so
-# that the precision figures refer to exactly the model reported there.
-leg_gls <- gls(
-  log_leg ~ logP_c * group * leg,
-  data = leg_long,
-  correlation = corSymm(form = ~ as.integer(leg) | ID),
-  weights = varIdent(form = ~ 1 | leg),
-  method = "REML",
-  control = glsControl(opt = "optim", maxIter = 200, msMaxIter = 200)
-)
+# Use the upstream contrast and slope tables so estimates, standard errors
+# and approximate Satterthwaite degrees of freedom agree exactly with the
+# main models. Precision intervals are pointwise (unadjusted), and the MDE
+# describes a single two-sided test at alpha = 0.05, not a Holm family.
+read_upstream <- function(filename) {
+  path <- file.path(tables_dir, filename)
+  if (!file.exists(path)) stop("Missing upstream precision input: ", path)
+  readr::read_csv(path, show_col_types = FALSE)
+}
 
-leg_df <- gls_df(leg_gls)
-
-group_levels <- levels(leg_long$group)
-leg_levels   <- levels(leg_long$leg)
-
-planned_leg <- emmeans::emmeans(leg_gls, ~ group | leg, at = list(logP_c = 0))
-
-strategy_contrasts <- list(
-  "Tenth instar - Eighth instar" = c(
-    "Female" = 0, "Eighth instar" = -1, "Ninth instar" = 0, "Tenth instar" = 1),
-  "Tenth instar - Female" = c(
-    "Female" = -1, "Eighth instar" = 0, "Ninth instar" = 0, "Tenth instar" = 1),
-  "Ninth instar - midpoint(Eighth instar, Tenth instar)" = c(
-    "Female" = 0, "Eighth instar" = -0.5, "Ninth instar" = 1, "Tenth instar" = -0.5)
-)
-
-# Re-order every contrast into the grid's factor level order before it is
-# passed to emmeans, so a mis-ordered vector cannot silently scramble it.
-strategy_contrasts <- map(strategy_contrasts, group_contrast, group_levels = group_levels)
-
-precision_leg <- map_dfr(names(strategy_contrasts), function(nm) {
-  emmeans::contrast(planned_leg, setNames(list(strategy_contrasts[[nm]]), nm)) |>
-    as_tibble() |>
-    transmute(
-      leg,
-      contrast = nm,
-      estimate,
-      SE,
-      df = leg_df,
-      ratio = exp(estimate),
-      percent_difference = 100 * (exp(estimate) - 1),
-      ci_lower = exp(estimate - qt(0.975, leg_df) * SE),
-      ci_upper = exp(estimate + qt(0.975, leg_df) * SE),
-      min_detectable_percent = mde_percent(SE, leg_df),
-      contrast_type = "planned"
-    )
-})
-
-# Direct verification that the contrast coefficients reproduce the group
-# means they are meant to compare. The instar-matched contrast must equal
-# the difference of the tenth-instar and female marginal means.
-check_means <- as_tibble(summary(planned_leg)) |>
-  select(leg, group, emmean) |>
-  pivot_wider(names_from = group, values_from = emmean)
-
-check_instar_matched <- precision_leg |>
-  filter(contrast == "Tenth instar - Female") |>
-  select(leg, contrast_estimate = estimate) |>
-  left_join(
-    check_means |> transmute(leg, direct_estimate = `Tenth instar` - Female),
-    by = "leg"
+precision_leg <- read_upstream("joint_leg_strategy_contrasts.csv") |>
+  mutate(
+    reverse = contrast == "Eighth instar - Tenth instar",
+    estimate = if_else(reverse, -estimate, estimate),
+    contrast = if_else(reverse, "Tenth instar - Eighth instar", contrast),
+    contrast = str_replace(contrast, "instar,Tenth", "instar, Tenth")
   ) |>
-  mutate(discrepancy = abs(contrast_estimate - direct_estimate))
-
-if (any(check_instar_matched$discrepancy > 1e-6)) {
-  stop(
-    paste0(
-      "Contrast coefficients do not reproduce the group means:\n",
-      paste(utils::capture.output(print(check_instar_matched)), collapse = "\n")
-    ),
-    call. = FALSE
-  )
-}
-
-cat("\nCONTRAST VERIFICATION (coefficients vs direct group-mean difference)\n")
-print(check_instar_matched)
-
-# Difference-in-differences allocation contrasts. These are built over the
-# group-by-leg grid, not within a single leg pair. emmeans generates the grid
-# with the first factor varying fastest, so a group-by-leg matrix flattened
-# column-wise is in grid order.
-both_legs <- emmeans::emmeans(leg_gls, ~ group * leg, at = list(logP_c = 0))
-
-allocation_contrast <- function(leg_1, leg_2, group_1, group_2, label) {
-  m <- matrix(
-    0,
-    nrow = length(group_levels),
-    ncol = length(leg_levels),
-    dimnames = list(group_levels, leg_levels)
+  transmute(
+    leg, contrast, estimate, SE, df,
+    ratio = exp(estimate),
+    percent_difference = 100 * (ratio - 1),
+    ci_lower = exp(estimate - qt(0.975, df) * SE),
+    ci_upper = exp(estimate + qt(0.975, df) * SE),
+    min_detectable_percent = mde_percent(SE, df),
+    contrast_type = "planned"
   )
 
-  m[group_1, leg_1] <- m[group_1, leg_1] + 1
-  m[group_2, leg_1] <- m[group_2, leg_1] - 1
-  m[group_1, leg_2] <- m[group_1, leg_2] - 1
-  m[group_2, leg_2] <- m[group_2, leg_2] + 1
-
-  emmeans::contrast(both_legs, setNames(list(as.numeric(m)), label)) |>
-    as_tibble() |>
-    transmute(
-      leg = NA,
-      contrast = label,
-      estimate,
-      SE,
-      df = leg_df,
-      ratio = exp(estimate),
-      percent_difference = 100 * (exp(estimate) - 1),
-      ci_lower = exp(estimate - qt(0.975, leg_df) * SE),
-      ci_upper = exp(estimate + qt(0.975, leg_df) * SE),
-      min_detectable_percent = mde_percent(SE, leg_df),
-      contrast_type = "difference_in_differences"
-    )
-}
-
-precision_allocation <- bind_rows(
-  allocation_contrast(
-    "Foreleg", "Hindleg", "Tenth instar", "Female",
-    "Tenth instar - Female: foreleg relative to hindleg"
-  ),
-  allocation_contrast(
-    "Midleg", "Hindleg", "Tenth instar", "Female",
-    "Tenth instar - Female: midleg relative to hindleg"
-  ),
-  allocation_contrast(
-    "Foreleg", "Hindleg", "Tenth instar", "Eighth instar",
-    "Tenth instar - Eighth instar: foreleg relative to hindleg"
-  )
+allocation_labels <- c(
+  "Tenth instar - Female: foreleg relative to hindleg",
+  "Tenth instar - Female: midleg relative to hindleg",
+  "Tenth instar - Eighth instar: foreleg relative to hindleg"
 )
-
+precision_allocation <- read_upstream(
+  "joint_anterior_posterior_difference_contrasts.csv"
+) |>
+  filter(contrast %in% allocation_labels) |>
+  transmute(
+    leg = NA_character_, contrast, estimate, SE, df,
+    ratio = exp(estimate),
+    percent_difference = 100 * (ratio - 1),
+    ci_lower = exp(estimate - qt(0.975, df) * SE),
+    ci_upper = exp(estimate + qt(0.975, df) * SE),
+    min_detectable_percent = mde_percent(SE, df),
+    contrast_type = "difference_in_differences"
+  )
+stopifnot(nrow(precision_leg) == 9L, nrow(precision_allocation) == 3L)
 precision_leg_table <- bind_rows(precision_leg, precision_allocation)
 
-# Weapon-leg slope precision. The weapon-leg interaction is supported while
-# the planned contrasts among slopes are not; the minimum detectable slope
-# difference shows whether that reflects an absence of morph differences or
-# limited precision.
-leg_long_head <- leg_long |> inner_join(
-  dat |> select(ID, log_head), by = "ID"
-)
-
-head_gls <- gls(
-  log_leg ~ (logP_c + log_head) * group * leg,
-  data = leg_long_head,
-  correlation = corSymm(form = ~ as.integer(leg) | ID),
-  weights = varIdent(form = ~ 1 | leg),
-  method = "REML",
-  control = glsControl(opt = "optim", maxIter = 200, msMaxIter = 200)
-)
-
-head_df <- gls_df(head_gls)
-
-weapon_leg_slopes <- emmeans::emtrends(head_gls, ~ group | leg, var = "log_head",
-                            infer = c(TRUE, TRUE)) |>
-  as_tibble() |>
+weapon_leg_slopes <- read_upstream("head_leg_raw_slopes.csv") |>
   transmute(
     leg, group,
-    weapon_leg_slope = log_head.trend,
-    SE,
-    df = head_df,
-    ci_lower = log_head.trend - qt(0.975, head_df) * SE,
-    ci_upper = log_head.trend + qt(0.975, head_df) * SE,
+    weapon_leg_slope = log_head_size.trend,
+    SE, df,
+    ci_lower = lower.CL,
+    ci_upper = upper.CL,
     excludes_zero = (ci_lower > 0 | ci_upper < 0),
-    min_detectable_slope = min_detectable_effect(SE, head_df)
+    min_detectable_slope = min_detectable_effect(SE, df)
   )
 
 # Male weapon-ear slope precision. The male slopes are imprecise; their
@@ -642,10 +529,8 @@ print(male_min_detectable)
 # The within-group correlations are computed upstream, on group-specific
 # size-adjusted residuals. They are consolidated here rather than
 # recomputed, so that a single set of upstream estimates is reported.
-# Under a strict resource-allocation trade-off at least some pairwise
-# covariances among competing traits should be negative, so the observed
-# count is informative about whether any trade-off is detectable. A
-# positive-sign audit cannot by itself demonstrate the absence of a cost,
+# This is a descriptive audit of phenotypic covariance. Positive
+# associations cannot by themselves demonstrate the absence of a cost,
 # because variation among individuals in resource acquisition generates
 # positive covariance among costly traits even when those traits compete
 # for allocation (van Noordwijk & de Jong 1986).
@@ -710,7 +595,11 @@ print(sign_audit_pooled)
 
 outputs <- list(
   instar_matched_decomposition = trait_decomposition,
-  instar_matched_joint_legs = joint_table,
+  instar_matched_contrasts = final_wide,
+  instar_matched_contrasts_long = final_long,
+  instar_group_model_parameters = bind_rows(final_parameters),
+  instar_contrast_samples = bind_rows(final_samples),
+  instar_contrast_sensitivity = contrast_sensitivity,
   precision_planned_leg_contrasts = precision_leg_table,
   precision_weapon_leg_slopes = weapon_leg_slopes,
   precision_weapon_ear_slopes = ear_weapon_slopes,
@@ -721,5 +610,5 @@ outputs <- list(
 
 iwalk(outputs, ~ readr::write_csv(.x, file.path(tables_dir, paste0(.y, ".csv"))))
 
-cat("\nInstar-matched decomposition and precision analyses completed.\n")
+cat("\nFinal instar contrasts, original-model sensitivity and precision analyses completed.\n")
 cat("Tables written to:\n ", normalizePath(tables_dir), "\n")

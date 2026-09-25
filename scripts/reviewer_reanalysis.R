@@ -1097,7 +1097,7 @@ focal_tests <- tribble(
   "Raw ear-foretibia slope x group", "Secondary", ear_tibia_raw_test$p_value,
   "Raw eye-head slope x group", "Secondary", eye_head_raw_test$p_value,
   "Raw weapon-ear slope x group", "Secondary", ear_head_raw_test$p_value,
-  "Five-trait correlation-matrix equality", "Primary", covariance_omnibus$p_value[covariance_omnibus$matrix_type == "correlation"]
+  "Five-trait correlation-matrix equality", "Exploratory", covariance_omnibus$p_value[covariance_omnibus$matrix_type == "correlation"]
 ) |>
   mutate(
     p_BH = p.adjust(p_value, method = "BH"),

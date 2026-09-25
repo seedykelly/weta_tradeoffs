@@ -1,0 +1,16 @@
+Analysing foreleg
+NOTE: A nesting structure was detected in the fitted model:
+    group %in% male
+Analysing midleg
+NOTE: A nesting structure was detected in the fitted model:
+    group %in% male
+Analysing hindleg
+NOTE: A nesting structure was detected in the fitted model:
+    group %in% male
+Analysing ear_lin
+NOTE: A nesting structure was detected in the fitted model:
+    group %in% male
+Analysing eye
+NOTE: A nesting structure was detected in the fitted model:
+    group %in% male
+Verified original decomposition. Completed sensitivity analysis: /Users/kellyclintdale/Library/Mobile Documents/com~apple~CloudDocs/Documents/Research_Admin/research projects/Trait compensation/analysis_outputs/instar_model_sensitivity

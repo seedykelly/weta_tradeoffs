@@ -175,6 +175,9 @@ emmeans::emm_options(
 
 # Convert an emmeans or emtrends object to a tibble with confidence
 # intervals and tests.
+# Holm adjusts tests; emmeans uses Bonferroni for confidence limits when
+# adjust = "holm". Table captions distinguish these simultaneous limits
+# from pointwise intervals in the separate precision tables.
 tidy_emm <- function(x, adjust = NULL) {
   if (is.null(adjust)) {
     out <- summary(x, infer = c(TRUE, TRUE))

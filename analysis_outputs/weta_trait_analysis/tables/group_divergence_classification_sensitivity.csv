@@ -1,0 +1,3 @@
+"scenario","n","excluded","rank_one_fraction","proportion_beyond_rank_one","null_95","permutations","p_value"
+"Full sample",311,0,0.88842213451758,0.11157786548242,0.0214129165296875,9999,1e-04
+"Exclude disagreements with 2010 categories",301,10,0.886414458840645,0.113585541159355,0.0210155700580069,9999,1e-04

@@ -1,0 +1,8 @@
+"item","value"
+"run_completed_utc","2026-09-24 14:57:17 UTC"
+"input_md5","2d67b2d772f6f28b3cdf77c87b35b5fc"
+"script_md5","308034cdcb1b8fe450326e59d9c9782a"
+"model","Group-specific intercepts, size slopes and residual variances"
+"reference_pronotum_mm","7.2"
+"degrees_of_freedom","Analytic Welch-Satterthwaite"
+"multiplicity","Five traits separately for each of three contrasts"

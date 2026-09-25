@@ -1,0 +1,16 @@
+"trait","extension","LR","df","p_value","p_holm"
+"foreleg","M0_original to M1_group_variance",4.74731820931743,3,0.191262756519336,0.765051026077343
+"foreleg","M1_group_variance to M2_group_slopes",19.4880616730691,3,0.000216682722983775,0.000866730891935098
+"foreleg","M2_group_slopes to M3_free_groups",0.0162069077468914,1,0.898697931531488,1
+"midleg","M0_original to M1_group_variance",6.7853907034405,3,0.0790619585983743,0.395309792991872
+"midleg","M1_group_variance to M2_group_slopes",17.0462605420291,3,0.00069142717254251,0.00207428151762753
+"midleg","M2_group_slopes to M3_free_groups",0.268560537475423,1,0.604299014326665,1
+"hindleg","M0_original to M1_group_variance",0.264557787686499,3,0.966550288641392,1
+"hindleg","M1_group_variance to M2_group_slopes",27.7026410316705,3,4.19327486485516e-06,2.09663743242758e-05
+"hindleg","M2_group_slopes to M3_free_groups",1.01923183722579,1,0.312701288824669,1
+"ear_lin","M0_original to M1_group_variance",1.49382055018941,3,0.683697276829324,1
+"ear_lin","M1_group_variance to M2_group_slopes",1.63156667552062,3,0.652253656371678,1
+"ear_lin","M2_group_slopes to M3_free_groups",0.437102378453346,1,0.508524339765107,1
+"eye","M0_original to M1_group_variance",4.5954371475184,3,0.203933855878988,0.765051026077343
+"eye","M1_group_variance to M2_group_slopes",1.60710520924795,3,0.657779836398341,1
+"eye","M2_group_slopes to M3_free_groups",1.03828155472013,1,0.308221473853802,1

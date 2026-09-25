@@ -7,7 +7,7 @@ This directory is the canonical manuscript and analysis project.
 - `manuscript.qmd` — sole maintained main manuscript, anonymized for review
 - `supplement.qmd` — sole maintained supplement, anonymized for review
 - `title-page.qmd` — author information, declarations and acknowledgements; submit separately
-- `submission-review/` — checked Word snapshots from the maintained QMD sources (23 September 2026); regenerate after source edits
+- `submission-review/` — final Word files regenerated from the maintained QMD sources (24 September 2026); regenerate after source edits
 - `kelly_2026_weta_morph_investment*.qmd` — superseded historical drafts; do not edit for submission or copy over the maintained pair
 - `scripts/` — data-cleaning, repeatability, and manuscript-analysis scripts
 - `data/` — raw, cleaned, and analysis-ready data
@@ -38,8 +38,9 @@ For a reduced-cost verification run, use a separate output directory:
 Rscript scripts/run_all.R data/trait_data.csv /tmp/weta-check 999 999 25
 ```
 
-The permutation count controls both the female-reference randomizations and
-the reviewer's PCA and covariance/correlation permutation analyses. The
+The permutation count controls the female-reference randomizations, the
+category-boundary sensitivity in `group_divergence_checks.R`, and the
+reviewer's PCA and covariance/correlation permutation analyses. The
 rarefaction count controls covariance-matrix subsampling. Random skewers remain
 fixed at 10,000 draws. Actual counts are saved in `analysis_run_manifest.csv`,
 `tables/reviewer_resampling_settings.csv`, and the relevant result tables.
@@ -65,10 +66,12 @@ Run the regression checks with:
 ```sh
 Rscript tests/test_workflow.R
 Rscript tests/test_qmd_tables.R
+Rscript tests/test_statistical_reporting.R
 ```
 
-These checks use temporary copies, including a relocated project, and do not
-overwrite the original data or analysis results. Full-pipeline reproducibility
+The workflow checks use temporary copies, including a relocated project.
+The statistical checks read the maintained results and write an audit report;
+none of these checks changes the data or model estimates. Full-pipeline reproducibility
 should additionally be checked by comparing two runs with identical counts.
 
 ### Analysis messages
@@ -96,8 +99,10 @@ quarto render title-page.qmd --to docx
 
 Documents read the analysis outputs beside their own QMD file; they no longer
 select a different project copy based on a hard-coded home/work computer path.
-To refresh the Word snapshots in `submission-review/`, add
-`--output-dir submission-review` to each rendering command above. Edit the QMD
+To refresh all three Word files in `submission-review/`, use
+`python3 scripts/render_submission.py`. It renders each source separately before
+collecting the outputs, because consecutive standalone Quarto renders into one
+output directory can remove earlier documents. Edit the QMD
 sources, not those generated Word copies.
 
 ## Submission sources and editorial checks
@@ -121,3 +126,54 @@ any applicable grant or permit identifiers on the title page. None were invented
 during editing. Retain the AI-assistance disclosure and also disclose this assistance
 in any accompanying cover letter, as requested by the journal. Check the final
 Word metadata as well as visible text for anonymity.
+
+## Statistical reporting conventions
+
+Morph assignments use size categories derived from the mixture-model analyses
+of Kelly and Adams (2010) and Kelly (2026); mixture models are not fitted anew
+to this dataset. The archived cut-offs used by `join_cleaned_files.R` are
+18.50579 and 24.15225 mm. The category-boundary sensitivity excludes the ten
+males whose labels differ under the 2010 cut-offs (19.04 and 24.20 mm),
+without changing the main assignments.
+
+Holm-adjusted contrast tests are accompanied by Bonferroni simultaneous
+intervals over the same family, following `emmeans` behaviour. Separate
+precision tables report pointwise intervals and approximate minimum detectable
+effects for individual unadjusted tests. Their leg contrasts and head-leg slopes
+reuse the upstream model tables, including the approximate Satterthwaite
+degrees of freedom. The final secondary instar results are in `instar_matched_contrasts.csv`.
+Legacy `weapon_component` columns occur only in the original-model sensitivity
+file `instar_matched_decomposition.csv`; they are not causal weapon effects.
+
+`group_divergence_checks.R` also produces the main group-divergence figure
+using the design-weighted trait axes from the headline rank-one analysis.
+`tests/test_statistical_reporting.R` checks these reporting conventions and
+writes `analysis_outputs/weta_trait_analysis/statistical_reporting_audit.md`.
+
+## Final analytical specification — 24 September 2026
+
+`FINAL_ANALYTICAL_APPROACH.md` records the final model decisions and stopping
+criteria. The primary frequentist models are retained. The secondary instar
+comparison uses separate group means, body-size slopes and residual variances
+for all five traits; an average male step is half the tenth-minus-eighth log
+contrast. `scripts/instar_matched_precision_analysis.R` fits this model and
+produces the main Table 3 and supplementary Table S20 inputs.
+
+The old constrained joint instar decomposition is retired and no longer run
+or cited. Any retained `instar_matched_joint_legs.csv` is historical output.
+The primary repeated-leg models continue to supply the allocation tests.
+`analysis_outputs/instar_model_sensitivity/` retains the earlier four-model
+exploration; its report is historical context for the final specification.
+The Bayesian analyses remain separate material for potential reviewer queries.
+
+To reproduce only the revised final stage using the verified upstream tables:
+
+```sh
+Rscript scripts/instar_matched_precision_analysis.R
+Rscript tests/test_statistical_reporting.R
+```
+
+The upstream results were generated under R 4.4.2; the final secondary stage
+and document checks used R 4.3.2. Session records accompany both. The same input
+data checksum is verified for all final analyses. `final_submission_manifest.csv`
+records the final source, data, analysis and document checksums.

@@ -1,0 +1,2 @@
+"median","lower_95","upper_95","effect_median","effect_lower_95","effect_upper_95","probability_positive","probability_negative","probability_in_region","frequentist_point_estimate","probability_share_above_80_percent","probability_share_above_90_percent"
+0.883710242417676,0.822847019735052,0.929475068208344,0.883710242417676,0.822847019735052,0.929475068208344,1,0,,0.88842213451758,0.99425,0.260875
