@@ -35,11 +35,7 @@ CDK collected and analysed the data and wrote the manuscript.
 
 # Data availability
 
-The data supporting this study are available through the Open Science Framework repository at https://osf.io/jrs28/overview?view_only=7a78f30e724b497ab3bb62ffa1c97e10.
-
-# Code availability
-
-The R code used to reproduce all analyses and figures will be available in the same Open Science Framework repository.
+The data supporting this study are available through the Zenodo repository at DOI: 10.5281/zenodo.22959939.
 
 # Ethical approval and permissions
 
